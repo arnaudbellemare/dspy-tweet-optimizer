@@ -65,7 +65,7 @@ def initialize_session_state():
 def main():
     initialize_session_state()
     
-    # Initialize DSPy
+    # Initialize DSPy (cached globally with @st.cache_resource)
     try:
         initialize_dspy()
     except Exception as e:
@@ -187,7 +187,7 @@ def main():
         status_text = st.empty()
         
         try:
-            # Run optimization with real-time updates
+            # Run optimization
             for iteration, (current_tweet, scores, is_improvement) in enumerate(
                 optimizer.optimize(input_text)
             ):
@@ -205,15 +205,14 @@ def main():
                 if not st.session_state.optimization_running:
                     break
                 
-                # Force UI update
-                st.rerun()
-                
         except Exception as e:
             st.error(f"Optimization failed: {str(e)}")
         finally:
             st.session_state.optimization_running = False
             progress_bar.progress(1.0)
             status_text.write("✅ Optimization completed!")
+            # Rerun once at the end to show final results
+            st.rerun()
     
     # Detailed Score History Graph (full width)
     if st.session_state.scores_history and len(st.session_state.scores_history) > 0:

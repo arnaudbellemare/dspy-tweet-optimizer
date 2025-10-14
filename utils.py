@@ -35,23 +35,26 @@ def load_categories() -> List[str]:
         st.error(f"Failed to load categories: {str(e)}")
         return []
 
+@st.cache_resource
 def initialize_dspy():
-    """Initialize DSPy with OpenRouter and Claude Sonnet 4.5."""
+    """Initialize DSPy with OpenRouter and Claude Sonnet 3.5 (cached globally)."""
     try:
         # Get OpenRouter API key from environment
         openrouter_key = os.getenv("OPENROUTER_API_KEY")
         if not openrouter_key:
             raise ValueError("OPENROUTER_API_KEY environment variable is required")
         
-        # Configure DSPy with OpenRouter
-        lm = dspy.OpenAI(
-            model="anthropic/claude-3.5-sonnet",
+        # Configure DSPy with OpenRouter using dspy.LM
+        lm = dspy.LM(
+            model="openrouter/anthropic/claude-3.5-sonnet",
             api_key=openrouter_key,
             api_base="https://openrouter.ai/api/v1",
-            model_type="chat"
+            max_tokens=4096,
+            temperature=0.7
         )
         
-        dspy.settings.configure(lm=lm)
+        dspy.configure(lm=lm)
+        return True  # Return success indicator
         
     except Exception as e:
         raise Exception(f"DSPy initialization failed: {str(e)}")

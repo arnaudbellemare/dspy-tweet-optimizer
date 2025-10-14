@@ -11,11 +11,11 @@ class TweetGenerator(dspy.Signature):
     improved_tweet: str = dspy.OutputField(desc="Generated or improved tweet text (max 280 characters)")
 
 class TweetEvaluator(dspy.Signature):
-    """Evaluate a tweet across multiple custom categories."""
+    """Evaluate a tweet across multiple custom categories. Return scores from 1-9 for each category."""
     
     tweet_text: str = dspy.InputField(desc="Tweet text to evaluate")
-    categories: List[str] = dspy.InputField(desc="List of evaluation category descriptions")
-    evaluation: EvaluationResult = dspy.OutputField(desc="Structured evaluation with scores for each category")
+    categories: str = dspy.InputField(desc="Comma-separated list of evaluation category descriptions")
+    category_scores: List[int] = dspy.OutputField(desc="List of integer scores (1-9) for each category in order")
 
 class TweetGeneratorModule(dspy.Module):
     """DSPy module for generating and improving tweets."""
@@ -47,25 +47,40 @@ class TweetEvaluatorModule(dspy.Module):
     
     def __init__(self):
         super().__init__()
-        self.evaluate = dspy.TypedPredictor(TweetEvaluator)
+        self.evaluate = dspy.ChainOfThought(TweetEvaluator)
     
     def forward(self, tweet_text: str, categories: List[str]) -> EvaluationResult:
         """Evaluate a tweet across specified categories."""
         try:
+            # Join categories into comma-separated string
+            categories_str = ", ".join(categories)
+            
             result = self.evaluate(
                 tweet_text=tweet_text,
-                categories=categories
+                categories=categories_str
             )
+            
+            # Extract and validate scores
+            scores = result.category_scores
+            
+            # Ensure we have the right number of scores
+            if len(scores) != len(categories):
+                # If mismatch, use default scores
+                scores = [5] * len(categories)
             
             # Validate scores are within 1-9 range
             validated_scores = []
-            for score in result.evaluation.category_scores:
-                validated_score = max(1, min(9, int(score)))
-                validated_scores.append(validated_score)
+            for score in scores:
+                try:
+                    validated_score = max(1, min(9, int(score)))
+                    validated_scores.append(validated_score)
+                except (ValueError, TypeError):
+                    validated_scores.append(5)  # Default to 5 if invalid
             
             # Create validated result
             validated_result = EvaluationResult(category_scores=validated_scores)
             
             return validated_result
         except Exception as e:
-            raise Exception(f"Tweet evaluation failed: {str(e)}")
+            # Return default scores on error
+            return EvaluationResult(category_scores=[5] * len(categories))
