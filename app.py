@@ -44,6 +44,20 @@ st.markdown("""
         border-radius: 5px;
         margin: 1rem 0;
     }
+    .best-tweet-container {
+        background-color: #1a1a1a;
+        padding: 1.5rem;
+        border-left: 4px solid #ff0000;
+        border-radius: 5px;
+        margin: 0.5rem 0;
+    }
+    .best-tweet-container p {
+        font-size: 1.1rem;
+        line-height: 1.6;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        margin: 0;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -205,7 +219,10 @@ def main():
         # Current best tweet display
         st.subheader("🏆 Current Best Tweet")
         if st.session_state.current_tweet:
-            st.text_area("", value=st.session_state.current_tweet, height=100, disabled=True)
+            # Use safe container approach - apply styling to container, display content safely
+            st.markdown('<div class="best-tweet-container">', unsafe_allow_html=True)
+            st.write(st.session_state.current_tweet)
+            st.markdown('</div>', unsafe_allow_html=True)
         else:
             st.info("No optimized tweet yet. Start optimization to see results.")
     
