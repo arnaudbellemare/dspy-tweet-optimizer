@@ -1,0 +1,218 @@
+import streamlit as st
+import json
+import os
+from typing import List, Dict
+import dspy
+from dspy_modules import TweetGenerator, TweetEvaluator
+from models import EvaluationResult
+from hill_climbing import HillClimbingOptimizer
+from utils import save_categories, load_categories, initialize_dspy
+
+# Page configuration
+st.set_page_config(
+    page_title="DSPy Tweet Optimizer",
+    page_icon="🎸",
+    layout="wide"
+)
+
+# Custom CSS for pop punk theme
+st.markdown("""
+<style>
+    .main-header {
+        color: #ff0000;
+        text-align: center;
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin-bottom: 2rem;
+    }
+    .category-item {
+        background-color: #1a1a1a;
+        padding: 1rem;
+        margin: 0.5rem 0;
+        border-left: 3px solid #ff0000;
+        border-radius: 5px;
+    }
+    .score-display {
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: #ff0000;
+    }
+    .iteration-info {
+        background-color: #1a1a1a;
+        padding: 1rem;
+        border-radius: 5px;
+        margin: 1rem 0;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+def initialize_session_state():
+    """Initialize session state variables"""
+    if 'categories' not in st.session_state:
+        st.session_state.categories = load_categories()
+    if 'current_tweet' not in st.session_state:
+        st.session_state.current_tweet = ""
+    if 'best_score' not in st.session_state:
+        st.session_state.best_score = 0
+    if 'iteration_count' not in st.session_state:
+        st.session_state.iteration_count = 0
+    if 'optimization_running' not in st.session_state:
+        st.session_state.optimization_running = False
+    if 'scores_history' not in st.session_state:
+        st.session_state.scores_history = []
+
+def main():
+    initialize_session_state()
+    
+    # Initialize DSPy
+    try:
+        initialize_dspy()
+    except Exception as e:
+        st.error(f"Failed to initialize DSPy: {str(e)}")
+        return
+
+    # Main header
+    st.markdown('<h1 class="main-header">🎸 DSPy Tweet Optimizer 🎸</h1>', unsafe_allow_html=True)
+    
+    # Sidebar configuration
+    with st.sidebar:
+        st.header("⚙️ Configuration")
+        
+        # Optimization parameters
+        st.subheader("Optimization Settings")
+        iterations = st.number_input("Iterations (n)", min_value=1, max_value=100, value=10)
+        patience = st.number_input("Patience", min_value=1, max_value=50, value=5)
+        
+        st.divider()
+        
+        # Category management
+        st.subheader("Evaluation Categories")
+        
+        # Add new category
+        with st.expander("➕ Add New Category"):
+            new_category = st.text_area("Category Description", placeholder="e.g., Engagement potential of the tweet")
+            if st.button("Add Category"):
+                if new_category.strip():
+                    st.session_state.categories.append(new_category.strip())
+                    save_categories(st.session_state.categories)
+                    st.success("Category added!")
+                    st.rerun()
+        
+        # Display and manage existing categories
+        if st.session_state.categories:
+            st.write("Current Categories:")
+            for i, category in enumerate(st.session_state.categories):
+                col1, col2 = st.columns([4, 1])
+                with col1:
+                    st.markdown(f'<div class="category-item">{category}</div>', unsafe_allow_html=True)
+                with col2:
+                    if st.button("🗑️", key=f"delete_{i}"):
+                        st.session_state.categories.pop(i)
+                        save_categories(st.session_state.categories)
+                        st.rerun()
+        else:
+            st.warning("No categories defined. Add at least one category to start optimization.")
+    
+    # Main content area
+    col1, col2 = st.columns([2, 1])
+    
+    with col1:
+        st.subheader("📝 Tweet Input")
+        input_text = st.text_area(
+            "Enter your initial tweet concept:",
+            placeholder="Enter the text you want to optimize into a tweet...",
+            height=100
+        )
+        
+        # Optimization controls
+        col1_1, col1_2 = st.columns(2)
+        with col1_1:
+            start_optimization = st.button(
+                "🚀 Start Optimization",
+                disabled=not input_text.strip() or len(st.session_state.categories) == 0 or st.session_state.optimization_running
+            )
+        with col1_2:
+            if st.button("🛑 Stop Optimization", disabled=not st.session_state.optimization_running):
+                st.session_state.optimization_running = False
+                st.rerun()
+        
+        # Current best tweet display
+        st.subheader("🏆 Current Best Tweet")
+        if st.session_state.current_tweet:
+            st.text_area("", value=st.session_state.current_tweet, height=100, disabled=True)
+        else:
+            st.info("No optimized tweet yet. Start optimization to see results.")
+    
+    with col2:
+        st.subheader("📊 Optimization Stats")
+        
+        # Iteration info
+        st.markdown(f'<div class="iteration-info">', unsafe_allow_html=True)
+        st.write(f"**Iteration:** {st.session_state.iteration_count}")
+        st.write(f"**Best Score:** {st.session_state.best_score:.2f}")
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        # Score breakdown
+        if st.session_state.scores_history and len(st.session_state.scores_history) > 0:
+            latest_scores = st.session_state.scores_history[-1]
+            st.subheader("📈 Latest Scores")
+            for i, (category, score) in enumerate(zip(st.session_state.categories, latest_scores.category_scores)):
+                st.markdown(f'<div class="score-display">{category[:30]}...: {score}/9</div>', unsafe_allow_html=True)
+        
+        # Progress visualization
+        if len(st.session_state.scores_history) > 1:
+            st.subheader("📉 Score History")
+            scores = [sum(score.category_scores)/len(score.category_scores) for score in st.session_state.scores_history]
+            st.line_chart(scores)
+
+    # Start optimization process
+    if start_optimization:
+        st.session_state.optimization_running = True
+        st.session_state.iteration_count = 0
+        st.session_state.current_tweet = input_text
+        st.session_state.scores_history = []
+        
+        # Initialize optimizer
+        optimizer = HillClimbingOptimizer(
+            generator=TweetGenerator(),
+            evaluator=TweetEvaluator(),
+            categories=st.session_state.categories,
+            max_iterations=iterations,
+            patience=patience
+        )
+        
+        # Create progress placeholders
+        progress_bar = st.progress(0)
+        status_text = st.empty()
+        
+        try:
+            # Run optimization with real-time updates
+            for iteration, (current_tweet, scores, is_improvement) in enumerate(
+                optimizer.optimize(input_text)
+            ):
+                st.session_state.iteration_count = iteration + 1
+                st.session_state.scores_history.append(scores)
+                
+                if is_improvement:
+                    st.session_state.current_tweet = current_tweet
+                    st.session_state.best_score = sum(scores.category_scores) / len(scores.category_scores)
+                
+                # Update progress
+                progress_bar.progress((iteration + 1) / iterations)
+                status_text.write(f"Iteration {iteration + 1}/{iterations} - {'✅ Improved!' if is_improvement else '⏭️ No improvement'}")
+                
+                if not st.session_state.optimization_running:
+                    break
+                
+                # Force UI update
+                st.rerun()
+                
+        except Exception as e:
+            st.error(f"Optimization failed: {str(e)}")
+        finally:
+            st.session_state.optimization_running = False
+            progress_bar.progress(1.0)
+            status_text.write("✅ Optimization completed!")
+
+if __name__ == "__main__":
+    main()
