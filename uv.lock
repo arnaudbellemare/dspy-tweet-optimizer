@@ -1937,6 +1937,7 @@ dependencies = [
     { name = "dspy" },
     { name = "dspy-ai" },
     { name = "openai" },
+    { name = "pandas" },
     { name = "pydantic" },
     { name = "streamlit" },
 ]
@@ -1946,6 +1947,7 @@ requires-dist = [
     { name = "dspy", specifier = ">=3.0.3" },
     { name = "dspy-ai", specifier = ">=3.0.3" },
     { name = "openai", specifier = ">=2.3.0" },
+    { name = "pandas", specifier = ">=2.3.3" },
     { name = "pydantic", specifier = ">=2.12.2" },
     { name = "streamlit", specifier = ">=1.50.0" },
 ]

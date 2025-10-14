@@ -3,7 +3,8 @@ import json
 import os
 from typing import List, Dict
 import dspy
-from dspy_modules import TweetGenerator, TweetEvaluator
+import pandas as pd
+from dspy_modules import TweetGeneratorModule, TweetEvaluatorModule
 from models import EvaluationResult
 from hill_climbing import HillClimbingOptimizer
 from utils import save_categories, load_categories, initialize_dspy
@@ -160,7 +161,7 @@ def main():
                 st.markdown(f'<div class="score-display">{category[:30]}...: {score}/9</div>', unsafe_allow_html=True)
         
         # Progress visualization
-        if len(st.session_state.scores_history) > 1:
+        if len(st.session_state.scores_history) > 0:
             st.subheader("📉 Score History")
             scores = [sum(score.category_scores)/len(score.category_scores) for score in st.session_state.scores_history]
             st.line_chart(scores)
@@ -174,8 +175,8 @@ def main():
         
         # Initialize optimizer
         optimizer = HillClimbingOptimizer(
-            generator=TweetGenerator(),
-            evaluator=TweetEvaluator(),
+            generator=TweetGeneratorModule(),
+            evaluator=TweetEvaluatorModule(),
             categories=st.session_state.categories,
             max_iterations=iterations,
             patience=patience
@@ -213,6 +214,64 @@ def main():
             st.session_state.optimization_running = False
             progress_bar.progress(1.0)
             status_text.write("✅ Optimization completed!")
+    
+    # Detailed Score History Graph (full width)
+    if st.session_state.scores_history and len(st.session_state.scores_history) > 0:
+        st.divider()
+        st.subheader("📊 Detailed Score History")
+        
+        # Create tabs for different views
+        tab1, tab2 = st.tabs(["📈 Average Score", "🎯 Category Breakdown"])
+        
+        with tab1:
+            # Average score over iterations
+            avg_scores = [sum(score.category_scores)/len(score.category_scores) for score in st.session_state.scores_history]
+            
+            df_avg = pd.DataFrame({
+                'Iteration': list(range(1, len(avg_scores) + 1)),
+                'Average Score': avg_scores
+            })
+            
+            st.line_chart(df_avg.set_index('Iteration'), use_container_width=True, height=400)
+            
+            # Display statistics
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Starting Score", f"{avg_scores[0]:.2f}")
+            with col2:
+                st.metric("Current Score", f"{avg_scores[-1]:.2f}")
+            with col3:
+                improvement = avg_scores[-1] - avg_scores[0]
+                st.metric("Total Improvement", f"{improvement:.2f}", delta=f"{improvement:.2f}")
+        
+        with tab2:
+            # Individual category scores over iterations
+            if st.session_state.categories:
+                # Build dataframe with all category scores
+                data = {'Iteration': list(range(1, len(st.session_state.scores_history) + 1))}
+                
+                for i, category in enumerate(st.session_state.categories):
+                    category_name = category[:30] + "..." if len(category) > 30 else category
+                    data[category_name] = [score.category_scores[i] for score in st.session_state.scores_history]
+                
+                df_categories = pd.DataFrame(data)
+                st.line_chart(df_categories.set_index('Iteration'), use_container_width=True, height=400)
+                
+                # Show improvement per category
+                st.subheader("Category Improvements")
+                for i, category in enumerate(st.session_state.categories):
+                    initial_score = st.session_state.scores_history[0].category_scores[i]
+                    current_score = st.session_state.scores_history[-1].category_scores[i]
+                    improvement = current_score - initial_score
+                    
+                    st.markdown(
+                        f'<div class="category-item">'
+                        f'<strong>{category[:50]}</strong><br>'
+                        f'Start: {initial_score}/9 → Current: {current_score}/9 '
+                        f'<span style="color: {"#00ff00" if improvement > 0 else "#ff0000" if improvement < 0 else "#ffffff"}">({improvement:+.0f})</span>'
+                        f'</div>',
+                        unsafe_allow_html=True
+                    )
 
 if __name__ == "__main__":
     main()
