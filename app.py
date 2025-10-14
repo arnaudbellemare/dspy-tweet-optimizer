@@ -7,7 +7,7 @@ import pandas as pd
 from dspy_modules import TweetGeneratorModule, TweetEvaluatorModule
 from models import EvaluationResult
 from hill_climbing import HillClimbingOptimizer
-from utils import save_categories, load_categories, initialize_dspy, get_dspy_lm
+from utils import save_categories, load_categories, initialize_dspy, get_dspy_lm, save_settings, load_settings
 
 # Page configuration
 st.set_page_config(
@@ -49,6 +49,9 @@ st.markdown("""
 
 def initialize_session_state():
     """Initialize session state variables"""
+    # Load saved settings
+    settings = load_settings()
+    
     if 'categories' not in st.session_state:
         st.session_state.categories = load_categories()
     if 'current_tweet' not in st.session_state:
@@ -62,7 +65,11 @@ def initialize_session_state():
     if 'scores_history' not in st.session_state:
         st.session_state.scores_history = []
     if 'selected_model' not in st.session_state:
-        st.session_state.selected_model = "openrouter/anthropic/claude-3.5-sonnet"
+        st.session_state.selected_model = settings.get("selected_model", "openrouter/anthropic/claude-3.5-sonnet")
+    if 'iterations' not in st.session_state:
+        st.session_state.iterations = settings.get("iterations", 10)
+    if 'patience' not in st.session_state:
+        st.session_state.patience = settings.get("patience", 5)
 
 def main():
     initialize_session_state()
@@ -85,19 +92,55 @@ def main():
             "GPT-5": "openrouter/openai/gpt-5"
         }
         
+        # Find the index of the currently selected model
+        reverse_model_options = {v: k for k, v in model_options.items()}
+        current_model_name = reverse_model_options.get(st.session_state.selected_model, "Claude 3.5 Sonnet")
+        current_index = list(model_options.keys()).index(current_model_name)
+        
         selected_model_name = st.selectbox(
             "Select Model",
             options=list(model_options.keys()),
-            index=0
+            index=current_index
         )
-        st.session_state.selected_model = model_options[selected_model_name]
+        new_model = model_options[selected_model_name]
+        
+        # Save settings if model changed
+        if new_model != st.session_state.selected_model:
+            st.session_state.selected_model = new_model
+            save_settings({
+                "selected_model": st.session_state.selected_model,
+                "iterations": st.session_state.iterations,
+                "patience": st.session_state.patience
+            })
         
         st.divider()
         
         # Optimization parameters
         st.subheader("Optimization Settings")
-        iterations = st.number_input("Iterations (n)", min_value=1, max_value=100, value=10)
-        patience = st.number_input("Patience", min_value=1, max_value=50, value=5)
+        iterations = st.number_input(
+            "Iterations (n)", 
+            min_value=1, 
+            max_value=100, 
+            value=st.session_state.iterations,
+            key="iterations_input"
+        )
+        patience = st.number_input(
+            "Patience", 
+            min_value=1, 
+            max_value=50, 
+            value=st.session_state.patience,
+            key="patience_input"
+        )
+        
+        # Save settings if iterations or patience changed
+        if iterations != st.session_state.iterations or patience != st.session_state.patience:
+            st.session_state.iterations = iterations
+            st.session_state.patience = patience
+            save_settings({
+                "selected_model": st.session_state.selected_model,
+                "iterations": iterations,
+                "patience": patience
+            })
         
         st.divider()
         

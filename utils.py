@@ -2,9 +2,10 @@ import json
 import os
 import streamlit as st
 import dspy
-from typing import List
+from typing import List, Dict, Any
 
 CATEGORIES_FILE = "categories.json"
+SETTINGS_FILE = "settings.json"
 
 def save_categories(categories: List[str]) -> None:
     """Save categories to JSON file."""
@@ -80,3 +81,35 @@ def is_valid_tweet(tweet: str) -> bool:
     """Check if tweet is valid (not empty and within character limit)."""
     cleaned_tweet = tweet.strip()
     return bool(cleaned_tweet) and len(cleaned_tweet) <= 280
+
+def save_settings(settings: Dict[str, Any]) -> None:
+    """Save settings to JSON file."""
+    try:
+        with open(SETTINGS_FILE, 'w') as f:
+            json.dump(settings, f, indent=2)
+    except Exception as e:
+        st.error(f"Failed to save settings: {str(e)}")
+
+def load_settings() -> Dict[str, Any]:
+    """Load settings from JSON file."""
+    try:
+        if os.path.exists(SETTINGS_FILE):
+            with open(SETTINGS_FILE, 'r') as f:
+                settings = json.load(f)
+                return settings if isinstance(settings, dict) else get_default_settings()
+        else:
+            # Return default settings if file doesn't exist
+            default_settings = get_default_settings()
+            save_settings(default_settings)
+            return default_settings
+    except Exception as e:
+        st.error(f"Failed to load settings: {str(e)}")
+        return get_default_settings()
+
+def get_default_settings() -> Dict[str, Any]:
+    """Get default settings."""
+    return {
+        "selected_model": "openrouter/anthropic/claude-3.5-sonnet",
+        "iterations": 10,
+        "patience": 5
+    }

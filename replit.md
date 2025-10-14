@@ -51,11 +51,19 @@ Preferred communication style: Simple, everyday language.
 **Rationale**: Pydantic provides runtime type checking and validation, ensuring the LLM returns properly formatted evaluation data. This prevents downstream errors and makes the optimization loop robust.
 
 ### State Management
-- **Session State**: Streamlit session state for UI persistence
-- **File-based Storage**: JSON file for category persistence across sessions
-- **Default Categories**: Fallback to sensible defaults if categories file is missing
+- **Session State**: Streamlit session state for UI persistence within a session
+- **File-based Storage**: 
+  - `categories.json` for evaluation category persistence across sessions
+  - `settings.json` for user preferences (model, iterations, patience) across sessions
+- **Default Values**: Fallback to sensible defaults if files are missing or corrupted
 
-**Design Decision**: Lightweight file-based storage is sufficient for this application's needs. Session state enables reactive UI updates during optimization iterations.
+**Design Decision**: Lightweight file-based storage is sufficient for this application's needs. Session state enables reactive UI updates during optimization iterations, while JSON files provide cross-session persistence for user preferences.
+
+**Persisted Settings:**
+- Selected LLM model (default: Claude 3.5 Sonnet)
+- Max iterations (default: 10)
+- Patience threshold (default: 5)
+- Custom evaluation categories
 
 ## External Dependencies
 
@@ -74,7 +82,8 @@ Preferred communication style: Simple, everyday language.
 - **pandas**: Data structure support (likely for displaying results)
 
 ### Configuration Files
-- **categories.json**: Stores user-defined evaluation categories
+- **categories.json**: Stores user-defined evaluation categories (persists across sessions)
+- **settings.json**: Stores user preferences for model, iterations, and patience (persists across sessions)
 - **Environment Variables**: OPENROUTER_API_KEY for API authentication
 
 ## Technical Implementation Notes
