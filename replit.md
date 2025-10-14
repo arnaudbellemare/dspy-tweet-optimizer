@@ -76,3 +76,50 @@ Preferred communication style: Simple, everyday language.
 ### Configuration Files
 - **categories.json**: Stores user-defined evaluation categories
 - **Environment Variables**: OPENROUTER_API_KEY for API authentication
+
+## Technical Implementation Notes
+
+### DSPy Configuration Pattern (Thread-Safe Model Switching)
+
+**Problem**: DSPy's `dspy.configure()` is thread-sensitive and can only be called once per thread. Streamlit's multi-threaded architecture causes errors when attempting to reconfigure DSPy for different models.
+
+**Solution**: 
+1. **One-time Global Configuration**: DSPy is configured exactly once on first run using a global flag (`dspy._replit_configured`)
+2. **Cached LM Instances**: Individual LM instances are created and cached per model using `@st.cache_resource`
+3. **Context-based Model Switching**: Use `dspy.context(lm=selected_lm)` to temporarily switch models without reconfiguration
+
+**Implementation**:
+```python
+# In utils.py
+@st.cache_resource
+def get_dspy_lm(model_name: str):
+    """Get a DSPy LM instance for the specified model (cached per model)."""
+    return dspy.LM(model=model_name, api_key=..., api_base=...)
+
+def initialize_dspy(model_name: str):
+    """Initialize DSPy once globally."""
+    if not hasattr(dspy, '_replit_configured'):
+        default_lm = get_dspy_lm(model_name)
+        dspy.configure(lm=default_lm)
+        dspy._replit_configured = True
+
+# In app.py - During optimization
+selected_lm = get_dspy_lm(st.session_state.selected_model)
+with dspy.context(lm=selected_lm):
+    for iteration, (tweet, scores, improved) in enumerate(optimizer.optimize(input_text)):
+        # Optimization runs with selected model
+```
+
+**Key Points**:
+- Never call `dspy.configure()` more than once
+- Always wrap DSPy module usage in `dspy.context()` when using non-default models
+- LM instances are lightweight and safe to cache
+- This pattern prevents "settings can only be changed by the thread that initially configured it" errors
+
+**Available Models** (October 2025):
+- Claude 3.5 Sonnet (default)
+- Opus 4.1
+- Gemini 2.5 Flash
+- Gemini 2.5 Flash Lite
+- Gemini 2.5 Pro
+- GPT-5

@@ -36,28 +36,37 @@ def load_categories() -> List[str]:
         return []
 
 @st.cache_resource
-def initialize_dspy():
-    """Initialize DSPy with OpenRouter and Claude Sonnet 3.5 (cached globally)."""
+def get_dspy_lm(model_name: str):
+    """Get a DSPy LM instance for the specified model (cached per model)."""
     try:
-        # Get OpenRouter API key from environment
         openrouter_key = os.getenv("OPENROUTER_API_KEY")
         if not openrouter_key:
             raise ValueError("OPENROUTER_API_KEY environment variable is required")
         
-        # Configure DSPy with OpenRouter using dspy.LM
         lm = dspy.LM(
-            model="openrouter/anthropic/claude-3.5-sonnet",
+            model=model_name,
             api_key=openrouter_key,
             api_base="https://openrouter.ai/api/v1",
             max_tokens=4096,
             temperature=0.7
         )
-        
-        dspy.configure(lm=lm)
-        return True  # Return success indicator
-        
+        return lm
     except Exception as e:
-        raise Exception(f"DSPy initialization failed: {str(e)}")
+        raise Exception(f"Failed to create LM: {str(e)}")
+
+def initialize_dspy(model_name: str = "openrouter/anthropic/claude-3.5-sonnet"):
+    """Initialize DSPy with OpenRouter and selected model."""
+    # Only configure DSPy once globally
+    if not hasattr(dspy, '_replit_configured'):
+        try:
+            # Get the LM for the default model
+            default_lm = get_dspy_lm(model_name)
+            dspy.configure(lm=default_lm)
+            dspy._replit_configured = True
+        except Exception as e:
+            raise Exception(f"DSPy initialization failed: {str(e)}")
+    
+    return True
 
 def format_tweet_for_display(tweet: str) -> str:
     """Format tweet text for better display."""

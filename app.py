@@ -7,7 +7,7 @@ import pandas as pd
 from dspy_modules import TweetGeneratorModule, TweetEvaluatorModule
 from models import EvaluationResult
 from hill_climbing import HillClimbingOptimizer
-from utils import save_categories, load_categories, initialize_dspy
+from utils import save_categories, load_categories, initialize_dspy, get_dspy_lm
 
 # Page configuration
 st.set_page_config(
@@ -61,16 +61,11 @@ def initialize_session_state():
         st.session_state.optimization_running = False
     if 'scores_history' not in st.session_state:
         st.session_state.scores_history = []
+    if 'selected_model' not in st.session_state:
+        st.session_state.selected_model = "openrouter/anthropic/claude-3.5-sonnet"
 
 def main():
     initialize_session_state()
-    
-    # Initialize DSPy (cached globally with @st.cache_resource)
-    try:
-        initialize_dspy()
-    except Exception as e:
-        st.error(f"Failed to initialize DSPy: {str(e)}")
-        return
 
     # Main header
     st.markdown('<h1 class="main-header">🎸 DSPy Tweet Optimizer 🎸</h1>', unsafe_allow_html=True)
@@ -78,6 +73,26 @@ def main():
     # Sidebar configuration
     with st.sidebar:
         st.header("⚙️ Configuration")
+        
+        # Model selection
+        st.subheader("Model Settings")
+        model_options = {
+            "Claude 3.5 Sonnet": "openrouter/anthropic/claude-3.5-sonnet",
+            "Opus 4.1": "openrouter/anthropic/claude-opus-4.1",
+            "Gemini 2.5 Flash": "openrouter/google/gemini-2.5-flash",
+            "Gemini 2.5 Flash Lite": "openrouter/google/gemini-2.5-flash-lite",
+            "Gemini 2.5 Pro": "openrouter/google/gemini-2.5-pro",
+            "GPT-5": "openrouter/openai/gpt-5"
+        }
+        
+        selected_model_name = st.selectbox(
+            "Select Model",
+            options=list(model_options.keys()),
+            index=0
+        )
+        st.session_state.selected_model = model_options[selected_model_name]
+        
+        st.divider()
         
         # Optimization parameters
         st.subheader("Optimization Settings")
@@ -113,6 +128,13 @@ def main():
                         st.rerun()
         else:
             st.warning("No categories defined. Add at least one category to start optimization.")
+    
+    # Initialize DSPy with selected model (after model selector is set)
+    try:
+        initialize_dspy(st.session_state.selected_model)
+    except Exception as e:
+        st.error(f"Failed to initialize DSPy: {str(e)}")
+        return
     
     # Main content area
     col1, col2 = st.columns([2, 1])
@@ -173,6 +195,9 @@ def main():
         st.session_state.current_tweet = input_text
         st.session_state.scores_history = []
         
+        # Get the LM for the selected model
+        selected_lm = get_dspy_lm(st.session_state.selected_model)
+        
         # Initialize optimizer
         optimizer = HillClimbingOptimizer(
             generator=TweetGeneratorModule(),
@@ -187,23 +212,24 @@ def main():
         status_text = st.empty()
         
         try:
-            # Run optimization
-            for iteration, (current_tweet, scores, is_improvement) in enumerate(
-                optimizer.optimize(input_text)
-            ):
-                st.session_state.iteration_count = iteration + 1
-                st.session_state.scores_history.append(scores)
-                
-                if is_improvement:
-                    st.session_state.current_tweet = current_tweet
-                    st.session_state.best_score = sum(scores.category_scores) / len(scores.category_scores)
-                
-                # Update progress
-                progress_bar.progress((iteration + 1) / iterations)
-                status_text.write(f"Iteration {iteration + 1}/{iterations} - {'✅ Improved!' if is_improvement else '⏭️ No improvement'}")
-                
-                if not st.session_state.optimization_running:
-                    break
+            # Run optimization with selected model using dspy.context
+            with dspy.context(lm=selected_lm):
+                for iteration, (current_tweet, scores, is_improvement) in enumerate(
+                    optimizer.optimize(input_text)
+                ):
+                    st.session_state.iteration_count = iteration + 1
+                    st.session_state.scores_history.append(scores)
+                    
+                    if is_improvement:
+                        st.session_state.current_tweet = current_tweet
+                        st.session_state.best_score = sum(scores.category_scores) / len(scores.category_scores)
+                    
+                    # Update progress
+                    progress_bar.progress((iteration + 1) / iterations)
+                    status_text.write(f"Iteration {iteration + 1}/{iterations} - {'✅ Improved!' if is_improvement else '⏭️ No improvement'}")
+                    
+                    if not st.session_state.optimization_running:
+                        break
                 
         except Exception as e:
             st.error(f"Optimization failed: {str(e)}")
