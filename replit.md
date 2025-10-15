@@ -60,7 +60,7 @@ Preferred communication style: Simple, everyday language.
 **Design Decision**: Lightweight file-based storage is sufficient for this application's needs. Session state enables reactive UI updates during optimization iterations, while JSON files provide cross-session persistence for user preferences.
 
 **Persisted Settings:**
-- Selected LLM model (default: Claude 3.5 Sonnet)
+- Selected LLM model (default: Claude Sonnet 4.5)
 - Max iterations (default: 10)
 - Patience threshold (default: 5)
 - Custom evaluation categories
@@ -126,7 +126,7 @@ with dspy.context(lm=selected_lm):
 - This pattern prevents "settings can only be changed by the thread that initially configured it" errors
 
 **Available Models** (October 2025):
-- Claude 3.5 Sonnet (default)
+- Claude Sonnet 4.5 (default)
 - Opus 4.1
 - Gemini 2.5 Flash
 - Gemini 2.5 Flash Lite

@@ -55,7 +55,7 @@ def get_dspy_lm(model_name: str):
     except Exception as e:
         raise Exception(f"Failed to create LM: {str(e)}")
 
-def initialize_dspy(model_name: str = "openrouter/anthropic/claude-3.5-sonnet"):
+def initialize_dspy(model_name: str = "openrouter/anthropic/claude-sonnet-4.5"):
     """Initialize DSPy with OpenRouter and selected model."""
     # Only configure DSPy once globally
     if not hasattr(dspy, '_replit_configured'):
@@ -109,7 +109,7 @@ def load_settings() -> Dict[str, Any]:
 def get_default_settings() -> Dict[str, Any]:
     """Get default settings."""
     return {
-        "selected_model": "openrouter/anthropic/claude-3.5-sonnet",
+        "selected_model": "openrouter/anthropic/claude-sonnet-4.5",
         "iterations": 10,
         "patience": 5
     }

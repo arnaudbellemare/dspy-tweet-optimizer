@@ -79,7 +79,7 @@ def initialize_session_state():
     if 'scores_history' not in st.session_state:
         st.session_state.scores_history = []
     if 'selected_model' not in st.session_state:
-        st.session_state.selected_model = settings.get("selected_model", "openrouter/anthropic/claude-3.5-sonnet")
+        st.session_state.selected_model = settings.get("selected_model", "openrouter/anthropic/claude-sonnet-4.5")
     if 'iterations' not in st.session_state:
         st.session_state.iterations = settings.get("iterations", 10)
     if 'patience' not in st.session_state:
@@ -100,7 +100,7 @@ def main():
         # Model selection
         st.subheader("Model Settings")
         model_options = {
-            "Claude 3.5 Sonnet": "openrouter/anthropic/claude-3.5-sonnet",
+            "Claude Sonnet 4.5": "openrouter/anthropic/claude-sonnet-4.5",
             "Opus 4.1": "openrouter/anthropic/claude-opus-4.1",
             "Gemini 2.5 Flash": "openrouter/google/gemini-2.5-flash",
             "Gemini 2.5 Flash Lite": "openrouter/google/gemini-2.5-flash-lite",
@@ -110,7 +110,7 @@ def main():
         
         # Find the index of the currently selected model
         reverse_model_options = {v: k for k, v in model_options.items()}
-        current_model_name = reverse_model_options.get(st.session_state.selected_model, "Claude 3.5 Sonnet")
+        current_model_name = reverse_model_options.get(st.session_state.selected_model, "Claude Sonnet 4.5")
         current_index = list(model_options.keys()).index(current_model_name)
         
         selected_model_name = st.selectbox(
