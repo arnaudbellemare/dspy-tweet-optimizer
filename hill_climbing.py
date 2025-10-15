@@ -20,12 +20,12 @@ class HillClimbingOptimizer:
         self.max_iterations = max_iterations
         self.patience = patience
     
-    def optimize(self, initial_text: str) -> Iterator[Tuple[str, EvaluationResult, bool]]:
+    def optimize(self, initial_text: str) -> Iterator[Tuple[str, EvaluationResult, bool, int]]:
         """
         Optimize tweet using hill climbing algorithm.
         
         Yields:
-            Tuple of (current_tweet, evaluation_result, is_improvement)
+            Tuple of (current_tweet, evaluation_result, is_improvement, patience_counter)
         """
         # Generate initial tweet
         current_tweet = self.generator(initial_text)
@@ -35,7 +35,7 @@ class HillClimbingOptimizer:
         best_score = current_score
         patience_counter = 0
         
-        yield (current_tweet, current_score, True)
+        yield (current_tweet, current_score, True, patience_counter)
         
         for iteration in range(1, self.max_iterations):
             # Generate feedback for improvement
@@ -59,10 +59,10 @@ class HillClimbingOptimizer:
                     best_tweet = candidate_tweet
                     best_score = candidate_score
                     patience_counter = 0
-                    yield (candidate_tweet, candidate_score, True)
+                    yield (candidate_tweet, candidate_score, True, patience_counter)
                 else:
                     patience_counter += 1
-                    yield (best_tweet, candidate_score, False)
+                    yield (best_tweet, candidate_score, False, patience_counter)
                 
                 # Early stopping if no improvement for 'patience' iterations
                 if patience_counter >= self.patience:
@@ -70,8 +70,8 @@ class HillClimbingOptimizer:
                     
             except Exception as e:
                 # If generation fails, yield current best
-                yield (best_tweet, best_score, False)
                 patience_counter += 1
+                yield (best_tweet, best_score, False, patience_counter)
                 
                 if patience_counter >= self.patience:
                     break

@@ -1,6 +1,7 @@
 import streamlit as st
 import json
 import os
+import time
 from typing import List, Dict
 import dspy
 import pandas as pd
@@ -84,6 +85,8 @@ def initialize_session_state():
         st.session_state.iterations = settings.get("iterations", 10)
     if 'patience' not in st.session_state:
         st.session_state.patience = settings.get("patience", 5)
+    if 'no_improvement_count' not in st.session_state:
+        st.session_state.no_improvement_count = 0
 
 def main():
     initialize_session_state()
@@ -229,10 +232,29 @@ def main():
     with col2:
         st.subheader("📊 Optimization Stats")
         
-        # Iteration info
+        # Iteration info with live update placeholders
         st.markdown(f'<div class="iteration-info">', unsafe_allow_html=True)
-        st.write(f"**Iteration:** {st.session_state.iteration_count}")
-        st.write(f"**Best Score:** {st.session_state.best_score:.2f}")
+        
+        # Create placeholders for live updates
+        if 'stats_placeholders' not in st.session_state:
+            st.session_state.stats_placeholders = {}
+        
+        iteration_placeholder = st.empty()
+        score_placeholder = st.empty()
+        no_improvement_placeholder = st.empty()
+        
+        # Display current values
+        iteration_placeholder.write(f"**Iteration:** {st.session_state.iteration_count}")
+        score_placeholder.write(f"**Best Score:** {st.session_state.best_score:.2f}")
+        no_improvement_placeholder.write(f"**No Improvement:** {st.session_state.no_improvement_count}/{st.session_state.patience}")
+        
+        # Store placeholders in session state for use in optimization loop
+        st.session_state.stats_placeholders = {
+            'iteration': iteration_placeholder,
+            'score': score_placeholder,
+            'no_improvement': no_improvement_placeholder
+        }
+        
         st.markdown('</div>', unsafe_allow_html=True)
         
         # Score breakdown
@@ -254,6 +276,7 @@ def main():
         st.session_state.iteration_count = 0
         st.session_state.current_tweet = input_text
         st.session_state.scores_history = []
+        st.session_state.no_improvement_count = 0
         
         # Get the LM for the selected model
         selected_lm = get_dspy_lm(st.session_state.selected_model)
@@ -273,20 +296,38 @@ def main():
         
         try:
             # Run optimization with selected model using dspy.context
+            early_stop = False
             with dspy.context(lm=selected_lm):
-                for iteration, (current_tweet, scores, is_improvement) in enumerate(
+                for iteration, (current_tweet, scores, is_improvement, patience_counter) in enumerate(
                     optimizer.optimize(input_text)
                 ):
                     st.session_state.iteration_count = iteration + 1
                     st.session_state.scores_history.append(scores)
+                    st.session_state.no_improvement_count = patience_counter
                     
                     if is_improvement:
                         st.session_state.current_tweet = current_tweet
                         st.session_state.best_score = sum(scores.category_scores) / len(scores.category_scores)
                     
+                    # Update live stats if placeholders exist
+                    if 'stats_placeholders' in st.session_state:
+                        st.session_state.stats_placeholders['iteration'].write(f"**Iteration:** {st.session_state.iteration_count}")
+                        st.session_state.stats_placeholders['score'].write(f"**Best Score:** {st.session_state.best_score:.2f}")
+                        st.session_state.stats_placeholders['no_improvement'].write(f"**No Improvement:** {st.session_state.no_improvement_count}/{patience}")
+                    
+                    # Check if we'll stop due to patience on next iteration
+                    if patience_counter >= patience:
+                        early_stop = True
+                    
                     # Update progress
                     progress_bar.progress((iteration + 1) / iterations)
-                    status_text.write(f"Iteration {iteration + 1}/{iterations} - {'✅ Improved!' if is_improvement else '⏭️ No improvement'}")
+                    if early_stop:
+                        status_text.write(f"⏹️ Stopped early at iteration {iteration + 1} - No improvement for {patience} iterations")
+                    else:
+                        status_text.write(f"Iteration {iteration + 1}/{iterations} - {'✅ Improved!' if is_improvement else '⏭️ No improvement'}")
+                    
+                    # Brief pause to allow UI to update visibly
+                    time.sleep(0.1)
                     
                     if not st.session_state.optimization_running:
                         break
@@ -296,7 +337,10 @@ def main():
         finally:
             st.session_state.optimization_running = False
             progress_bar.progress(1.0)
-            status_text.write("✅ Optimization completed!")
+            if early_stop:
+                status_text.write(f"⏹️ Optimization stopped - No improvement for {patience} iterations")
+            else:
+                status_text.write("✅ Optimization completed!")
             # Rerun once at the end to show final results
             st.rerun()
     
