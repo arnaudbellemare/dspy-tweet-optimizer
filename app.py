@@ -191,6 +191,11 @@ def main() -> None:
             if st.session_state.history_selector:
                 st.session_state.input_text_value = st.session_state.history_selector
         
+        # Callback function for text input changes
+        def on_text_change():
+            # Update the input text value from the widget
+            st.session_state.input_text_value = st.session_state.main_text_input
+        
         # Input history dropdown
         if st.session_state.input_history:
             st.selectbox(
@@ -201,12 +206,14 @@ def main() -> None:
                 on_change=on_history_select
             )
         
-        # Text area with value from session state
+        # Text area with value from session state and callback
         input_text = st.text_area(
             "Enter your initial tweet concept:",
             value=st.session_state.input_text_value,
             placeholder="Enter the text you want to optimize into a tweet...",
-            height=INPUT_HEIGHT
+            height=INPUT_HEIGHT,
+            key="main_text_input",
+            on_change=on_text_change
         )
         
         # Update session state when user types
@@ -255,16 +262,22 @@ def main() -> None:
         st.session_state.input_history = add_to_input_history(st.session_state.input_history, input_text)
         save_input_history(st.session_state.input_history)
         
-        # Track this input as optimized
+        # Track this input as optimized and set initial current_tweet
+        st.session_state.optimizing_text = input_text.strip()  # Store text to optimize
         st.session_state.last_optimized_input = input_text.strip()
+        st.session_state.current_tweet = input_text  # Set initial tweet
         st.session_state.optimization_running = True
         st.session_state.iteration_count = 0
-        st.session_state.current_tweet = input_text
         st.session_state.scores_history = []
         st.session_state.no_improvement_count = 0
         st.session_state.generator_inputs = {}
         st.session_state.evaluator_inputs = {}
         
+        # Trigger immediate rerun to show initial state and start optimization
+        st.rerun()
+    
+    # Run optimization if it's marked as running
+    if st.session_state.optimization_running and hasattr(st.session_state, 'optimizing_text'):
         # Get the LM for the selected model
         selected_lm = get_dspy_lm(st.session_state.selected_model)
         
@@ -286,7 +299,7 @@ def main() -> None:
             # Run optimization with selected model using dspy.context
             with dspy.context(lm=selected_lm):
                 for iteration, (current_tweet, scores, is_improvement, patience_counter, generator_inputs, evaluator_inputs) in enumerate(
-                    optimizer.optimize(input_text)
+                    optimizer.optimize(st.session_state.optimizing_text)
                 ):
                     st.session_state.iteration_count = iteration + 1
                     st.session_state.scores_history.append(scores)

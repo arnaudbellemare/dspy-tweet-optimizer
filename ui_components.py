@@ -109,7 +109,7 @@ def render_category_management(categories: List[str]) -> None:
                     save_categories(st.session_state.categories)
                     st.rerun()
     else:
-        st.warning("No categories defined. Add at least one category to start optimization.")
+        st.warning("No categories defined. Add at least one category to enable optimization.")
 
 
 def render_best_tweet_display(current_tweet: str) -> None:
@@ -125,7 +125,7 @@ def render_best_tweet_display(current_tweet: str) -> None:
         st.write(current_tweet)
         st.markdown('</div>', unsafe_allow_html=True)
     else:
-        st.info("No optimized tweet yet. Start optimization to see results.")
+        st.info("No optimized tweet yet. Enter text above to automatically optimize.")
 
 
 def render_generator_inputs(generator_inputs: Dict[str, Any]) -> None:
