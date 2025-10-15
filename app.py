@@ -223,7 +223,14 @@ def main() -> None:
             key="main_text_input"
         )
         
-        # Progress bar and status (shown during optimization, above best tweet)
+        # Rerun button - allows re-optimization of the same text
+        if input_text.strip() and len(st.session_state.categories) > 0 and not st.session_state.optimization_running:
+            if st.button("🔄 Rerun Optimization", use_container_width=True):
+                # Clear last optimized to trigger optimization again
+                st.session_state.last_optimized_input = ""
+                st.rerun()
+        
+        # Progress bar and status placeholders (filled during optimization, above best tweet)
         progress_placeholder = st.empty()
         status_placeholder = st.empty()
         
