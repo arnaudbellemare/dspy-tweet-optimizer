@@ -21,7 +21,7 @@ class HillClimbingOptimizer:
         self.max_iterations = max_iterations
         self.patience = patience
     
-    def optimize(self, initial_text: str) -> Iterator[Tuple[str, EvaluationResult, bool, int, Dict, Dict]]:
+    def optimize(self, initial_text: str) -> Iterator[Tuple[str, EvaluationResult, bool, int, Dict[str, str], Dict[str, str]]]:
         """
         Optimize tweet using hill climbing algorithm.
         

@@ -248,9 +248,9 @@ def main() -> None:
         progress_bar = st.progress(0)
         status_text = st.empty()
         
+        early_stop = False
         try:
             # Run optimization with selected model using dspy.context
-            early_stop = False
             with dspy.context(lm=selected_lm):
                 for iteration, (current_tweet, scores, is_improvement, patience_counter, generator_inputs, evaluator_inputs) in enumerate(
                     optimizer.optimize(input_text)
