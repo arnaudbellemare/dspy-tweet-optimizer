@@ -4,7 +4,8 @@ import dspy
 from dspy_modules import TweetGeneratorModule, TweetEvaluatorModule
 from models import EvaluationResult
 from hill_climbing import HillClimbingOptimizer
-from utils import initialize_dspy, get_dspy_lm, save_settings, load_settings
+from utils import initialize_dspy, get_dspy_lm, save_settings, load_settings, load_categories, load_input_history
+from session_state_manager import SessionStateManager
 from ui_components import (
     render_custom_css,
     render_main_header,
@@ -47,41 +48,12 @@ render_custom_css()
 
 def initialize_session_state() -> None:
     """Initialize session state variables with saved settings."""
-    from utils import load_categories, load_input_history
     settings = load_settings()
+    categories = load_categories()
+    input_history = load_input_history()
     
-    if 'categories' not in st.session_state:
-        st.session_state.categories = load_categories()
-    if 'current_tweet' not in st.session_state:
-        st.session_state.current_tweet = ""
-    if 'best_score' not in st.session_state:
-        st.session_state.best_score = 0
-    if 'iteration_count' not in st.session_state:
-        st.session_state.iteration_count = 0
-    if 'optimization_running' not in st.session_state:
-        st.session_state.optimization_running = False
-    if 'scores_history' not in st.session_state:
-        st.session_state.scores_history = []
-    if 'selected_model' not in st.session_state:
-        st.session_state.selected_model = settings.get("selected_model", DEFAULT_MODEL)
-    if 'iterations' not in st.session_state:
-        st.session_state.iterations = settings.get("iterations", DEFAULT_ITERATIONS)
-    if 'patience' not in st.session_state:
-        st.session_state.patience = settings.get("patience", DEFAULT_PATIENCE)
-    if 'use_cache' not in st.session_state:
-        st.session_state.use_cache = settings.get("use_cache", DEFAULT_USE_CACHE)
-    if 'no_improvement_count' not in st.session_state:
-        st.session_state.no_improvement_count = 0
-    if 'generator_inputs' not in st.session_state:
-        st.session_state.generator_inputs = {}
-    if 'evaluator_inputs' not in st.session_state:
-        st.session_state.evaluator_inputs = {}
-    if 'input_history' not in st.session_state:
-        st.session_state.input_history = load_input_history()
-    if 'last_optimized_input' not in st.session_state:
-        st.session_state.last_optimized_input = ""
-    if 'latest_tweet' not in st.session_state:
-        st.session_state.latest_tweet = ""
+    # Use SessionStateManager for cleaner initialization
+    SessionStateManager.initialize(categories, input_history, settings)
 
 def render_sidebar_configuration() -> tuple:
     """
