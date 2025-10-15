@@ -30,8 +30,9 @@ Preferred communication style: Simple, everyday language.
 - **Strategy**: Hill-climbing algorithm with patience mechanism
 - **Iteration Control**: Configurable max iterations (default: 10) and patience counter (default: 5)
 - **Feedback Loop**: Generates improvement feedback based on evaluation scores, feeds back to generator
+- **Input Transparency**: Displays generator inputs (input_text, current_tweet, feedback) for each iteration via UI expander
 
-**Rationale**: Hill-climbing provides a simple yet effective optimization strategy for tweet improvement. The patience mechanism prevents infinite loops when no improvements are found. The feedback loop creates a self-improving system where evaluation results directly inform the next generation attempt.
+**Rationale**: Hill-climbing provides a simple yet effective optimization strategy for tweet improvement. The patience mechanism prevents infinite loops when no improvements are found. The feedback loop creates a self-improving system where evaluation results directly inform the next generation attempt. Showing generator inputs provides transparency into what's being sent to the LLM at each iteration.
 
 #### Evaluation System
 - **Customizable Categories**: User-defined evaluation dimensions stored in JSON

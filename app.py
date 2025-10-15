@@ -88,6 +88,8 @@ def initialize_session_state():
         st.session_state.use_cache = settings.get("use_cache", True)
     if 'no_improvement_count' not in st.session_state:
         st.session_state.no_improvement_count = 0
+    if 'generator_inputs' not in st.session_state:
+        st.session_state.generator_inputs = {}
 
 def main():
     initialize_session_state()
@@ -239,6 +241,21 @@ def main():
             st.markdown('</div>', unsafe_allow_html=True)
         else:
             st.info("No optimized tweet yet. Start optimization to see results.")
+        
+        # Generator inputs display
+        if st.session_state.generator_inputs:
+            st.subheader("Current Generator Inputs")
+            with st.expander("View Inputs", expanded=False):
+                st.write("**Input Text:**")
+                st.write(st.session_state.generator_inputs.get("input_text", ""))
+                
+                st.write("**Current Tweet:**")
+                current = st.session_state.generator_inputs.get("current_tweet", "")
+                st.write(current if current else "(empty for first iteration)")
+                
+                st.write("**Feedback:**")
+                feedback = st.session_state.generator_inputs.get("feedback", "")
+                st.write(feedback if feedback else "(empty for first iteration)")
     
     with col2:
         st.subheader("Optimization Stats")
@@ -288,6 +305,7 @@ def main():
         st.session_state.current_tweet = input_text
         st.session_state.scores_history = []
         st.session_state.no_improvement_count = 0
+        st.session_state.generator_inputs = {}
         
         # Get the LM for the selected model
         selected_lm = get_dspy_lm(st.session_state.selected_model)
@@ -309,12 +327,13 @@ def main():
             # Run optimization with selected model using dspy.context
             early_stop = False
             with dspy.context(lm=selected_lm):
-                for iteration, (current_tweet, scores, is_improvement, patience_counter) in enumerate(
+                for iteration, (current_tweet, scores, is_improvement, patience_counter, generator_inputs) in enumerate(
                     optimizer.optimize(input_text)
                 ):
                     st.session_state.iteration_count = iteration + 1
                     st.session_state.scores_history.append(scores)
                     st.session_state.no_improvement_count = patience_counter
+                    st.session_state.generator_inputs = generator_inputs
                     
                     if is_improvement:
                         st.session_state.current_tweet = current_tweet
