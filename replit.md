@@ -70,4 +70,81 @@ Preferred communication style: Simple, everyday language.
 ### Configuration Files
 - **categories.json**: Stores user-defined evaluation categories.
 - **settings.json**: Stores user preferences (LLM model, max iterations, patience).
+- **input_history.json**: Stores recent inputs for quick access.
 - **Environment Variables**: `OPENROUTER_API_KEY` for API authentication.
+
+## Code Architecture
+
+### Module Structure
+
+**Core Modules:**
+- **constants.py**: Centralized configuration containing all magic numbers, colors, defaults, and error messages
+- **session_state_manager.py**: SessionStateManager class for centralized session state initialization and management
+- **optimization_manager.py**: OptimizationManager class for optimization loop execution and progress tracking
+- **helpers.py**: Reusable utility functions to eliminate code duplication
+- **ui_components.py**: Modular UI rendering functions for improved code organization
+- **models.py**: Pydantic data models for type safety
+- **dspy_modules.py**: DSPy module implementations (generator and evaluator)
+- **hill_climbing.py**: Optimization algorithm implementation
+- **utils.py**: Utility functions for file I/O and DSPy initialization
+- **app.py**: Main application entry point with clean, focused functions
+
+**Key Design Principles:**
+- DRY (Don't Repeat Yourself): Eliminated code duplication through helper functions and manager classes
+- Single Responsibility: Each function has one clear purpose
+- Constants over Magic Numbers: All hardcoded values centralized in constants.py
+- Type Safety: Comprehensive type hints throughout codebase
+- Modular UI: UI components separated for reusability and testing
+- Separation of Concerns: Business logic separated from UI logic through manager classes
+
+**Architecture Improvements (October 2025):**
+- **SessionStateManager**: Centralized class for session state management
+  - Eliminates repetitive if-not-in-state checks across 20+ state variables
+  - Provides clean initialization with `SessionStateManager.initialize()`
+  - Offers utility methods: `get()`, `set()`, `update()`, `reset_optimization_state()`
+  - Improves maintainability and reduces boilerplate code by ~40 lines
+- **OptimizationManager**: Extracted optimization loop logic from app.py
+  - Encapsulates optimization execution in `run_optimization()` method
+  - Handles progress tracking and UI updates in isolation
+  - Separates business logic from presentation layer
+  - Reduces app.py complexity by ~60 lines
+- **Enhanced Constants**: Added UI-related constants
+  - `HISTORY_RECENT_INDICATOR`, `HISTORY_RECENT_COUNT`, `HISTORY_TRUNCATE_LENGTH`
+  - All magic numbers now centralized for easy configuration
+
+## Testing
+
+### Test Infrastructure
+- **Framework**: pytest with pytest-mock
+- **Coverage**: 48 comprehensive unit tests
+- **Execution Time**: < 10 seconds
+- **Location**: `tests/` directory
+
+### Test Coverage
+- ✅ **Pydantic Models**: Score validation, comparisons, field requirements
+- ✅ **Helper Functions**: Text formatting, truncation, settings management
+- ✅ **Session State Manager**: Initialization, updates, state reset
+- ✅ **Utility Functions**: File I/O, input history, tweet processing
+- ✅ **Mocked Dependencies**: Streamlit session_state, file operations
+
+### Running Tests
+```bash
+# Run all tests
+pytest tests/
+
+# Run with verbose output
+pytest tests/ -v
+
+# Run specific test file
+pytest tests/test_models.py
+```
+
+### Test Organization
+- **conftest.py**: Shared fixtures (sample data, mock objects)
+- **test_models.py**: Pydantic model validation tests
+- **test_helpers.py**: Helper function tests
+- **test_session_state_manager.py**: State management tests
+- **test_utils.py**: Utility function tests
+- **MockSessionState**: Custom mock class simulating Streamlit's session_state
+
+See `tests/README.md` for detailed testing documentation.
