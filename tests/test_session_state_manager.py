@@ -5,13 +5,29 @@ from unittest.mock import MagicMock, patch
 from session_state_manager import SessionStateManager
 
 
+class MockSessionState(dict):
+    """Mock class to simulate Streamlit's session_state behavior."""
+    
+    def __getattr__(self, key):
+        try:
+            return self[key]
+        except KeyError:
+            raise AttributeError(f"'{type(self).__name__}' object has no attribute '{key}'")
+    
+    def __setattr__(self, key, value):
+        self[key] = value
+    
+    def __contains__(self, key):
+        return dict.__contains__(self, key)
+
+
 class TestSessionStateManager:
     """Tests for SessionStateManager class."""
     
     @patch('session_state_manager.st')
     def test_initialize_with_defaults(self, mock_st):
         """Test initialization with default values."""
-        mock_st.session_state = {}
+        mock_st.session_state = MockSessionState()
         
         categories = ["Category 1", "Category 2"]
         input_history = ["Input 1", "Input 2"]
@@ -35,10 +51,10 @@ class TestSessionStateManager:
     @patch('session_state_manager.st')
     def test_initialize_preserves_existing_state(self, mock_st):
         """Test that initialization doesn't override existing state."""
-        mock_st.session_state = {
+        mock_st.session_state = MockSessionState({
             'categories': ["Existing Category"],
             'current_tweet': "Existing tweet"
-        }
+        })
         
         categories = ["New Category"]
         input_history = []
@@ -53,7 +69,7 @@ class TestSessionStateManager:
     @patch('session_state_manager.st')
     def test_reset_optimization_state(self, mock_st):
         """Test resetting optimization state."""
-        mock_st.session_state = {
+        mock_st.session_state = MockSessionState({
             'current_tweet': "Some tweet",
             'best_score': 8.5,
             'iteration_count': 5,
@@ -64,7 +80,7 @@ class TestSessionStateManager:
             'evaluator_inputs': {"test": "data"},
             'latest_tweet': "Latest",
             'optimizing_text': "Optimizing"
-        }
+        })
         
         SessionStateManager.reset_optimization_state()
         
@@ -91,8 +107,7 @@ class TestSessionStateManager:
     @patch('session_state_manager.st')
     def test_get_missing_key_with_default(self, mock_st):
         """Test getting a missing key with default value."""
-        mock_st.session_state = {}
-        mock_st.session_state.get = lambda key, default=None: default
+        mock_st.session_state = MockSessionState()
         
         value = SessionStateManager.get('missing_key', 'default_value')
         assert value == 'default_value'
