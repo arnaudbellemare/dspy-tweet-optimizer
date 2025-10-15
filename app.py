@@ -90,6 +90,8 @@ def initialize_session_state():
         st.session_state.no_improvement_count = 0
     if 'generator_inputs' not in st.session_state:
         st.session_state.generator_inputs = {}
+    if 'evaluator_inputs' not in st.session_state:
+        st.session_state.evaluator_inputs = {}
 
 def main():
     initialize_session_state()
@@ -244,8 +246,8 @@ def main():
         
         # Generator inputs display
         if st.session_state.generator_inputs:
-            st.subheader("Current Generator Inputs")
-            with st.expander("View Inputs", expanded=False):
+            st.subheader("Generator Inputs")
+            with st.expander("View Generator Inputs", expanded=False):
                 st.write("**Input Text:**")
                 st.write(st.session_state.generator_inputs.get("input_text", ""))
                 
@@ -256,6 +258,20 @@ def main():
                 st.write("**Feedback:**")
                 feedback = st.session_state.generator_inputs.get("feedback", "")
                 st.write(feedback if feedback else "(empty for first iteration)")
+        
+        # Evaluator inputs display
+        if st.session_state.evaluator_inputs:
+            st.subheader("Evaluator Inputs")
+            with st.expander("View Evaluator Inputs", expanded=False):
+                st.write("**Original Text:**")
+                st.write(st.session_state.evaluator_inputs.get("original_text", ""))
+                
+                st.write("**Current Best Tweet:**")
+                current_best = st.session_state.evaluator_inputs.get("current_best_tweet", "")
+                st.write(current_best if current_best else "(empty for first iteration)")
+                
+                st.write("**Tweet Being Evaluated:**")
+                st.write(st.session_state.evaluator_inputs.get("tweet_text", ""))
     
     with col2:
         st.subheader("Optimization Stats")
@@ -306,6 +322,7 @@ def main():
         st.session_state.scores_history = []
         st.session_state.no_improvement_count = 0
         st.session_state.generator_inputs = {}
+        st.session_state.evaluator_inputs = {}
         
         # Get the LM for the selected model
         selected_lm = get_dspy_lm(st.session_state.selected_model)
@@ -327,13 +344,14 @@ def main():
             # Run optimization with selected model using dspy.context
             early_stop = False
             with dspy.context(lm=selected_lm):
-                for iteration, (current_tweet, scores, is_improvement, patience_counter, generator_inputs) in enumerate(
+                for iteration, (current_tweet, scores, is_improvement, patience_counter, generator_inputs, evaluator_inputs) in enumerate(
                     optimizer.optimize(input_text)
                 ):
                     st.session_state.iteration_count = iteration + 1
                     st.session_state.scores_history.append(scores)
                     st.session_state.no_improvement_count = patience_counter
                     st.session_state.generator_inputs = generator_inputs
+                    st.session_state.evaluator_inputs = evaluator_inputs
                     
                     if is_improvement:
                         st.session_state.current_tweet = current_tweet

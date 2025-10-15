@@ -21,18 +21,23 @@ Preferred communication style: Simple, everyday language.
 
 #### Tweet Generation Pipeline
 - **TweetGeneratorModule**: Uses DSPy's ChainOfThought to generate or improve tweets
-- **TweetEvaluatorModule**: Uses DSPy's TypedPredictor for structured evaluation with Pydantic models
+  - Receives: original input text, current best tweet, and improvement feedback
+- **TweetEvaluatorModule**: Uses DSPy's ChainOfThought for structured evaluation with Pydantic models
+  - Receives: original input text, current best tweet, tweet to evaluate, and categories
+  - Validates that improved tweets maintain the same meaning as the original
 - **Character Limit Enforcement**: Automatic truncation to 280 characters with ellipsis
 
-**Design Decision**: Separate modules for generation and evaluation enable independent optimization of each concern. Chain-of-thought for generation improves reasoning quality, while typed prediction ensures structured, parseable evaluation results.
+**Design Decision**: Separate modules for generation and evaluation enable independent optimization of each concern. Chain-of-thought for both generation and evaluation improves reasoning quality. Providing original text and current best tweet to the evaluator ensures semantic consistency - the evaluator can verify that improved tweets don't drift from the original meaning.
 
 #### Optimization Algorithm
 - **Strategy**: Hill-climbing algorithm with patience mechanism
 - **Iteration Control**: Configurable max iterations (default: 10) and patience counter (default: 5)
 - **Feedback Loop**: Generates improvement feedback based on evaluation scores, feeds back to generator
-- **Input Transparency**: Displays generator inputs (input_text, current_tweet, feedback) for each iteration via UI expander
+- **Input Transparency**: Displays both generator and evaluator inputs for each iteration via UI expanders
+  - Generator inputs: input_text, current_tweet, feedback
+  - Evaluator inputs: original_text, current_best_tweet, tweet_being_evaluated
 
-**Rationale**: Hill-climbing provides a simple yet effective optimization strategy for tweet improvement. The patience mechanism prevents infinite loops when no improvements are found. The feedback loop creates a self-improving system where evaluation results directly inform the next generation attempt. Showing generator inputs provides transparency into what's being sent to the LLM at each iteration.
+**Rationale**: Hill-climbing provides a simple yet effective optimization strategy for tweet improvement. The patience mechanism prevents infinite loops when no improvements are found. The feedback loop creates a self-improving system where evaluation results directly inform the next generation attempt. Showing both generator and evaluator inputs provides complete transparency into what data is being sent to each LLM module at each iteration, enabling users to understand and debug the optimization process.
 
 #### Evaluation System
 - **Customizable Categories**: User-defined evaluation dimensions stored in JSON

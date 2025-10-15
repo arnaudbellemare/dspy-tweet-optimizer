@@ -11,11 +11,13 @@ class TweetGenerator(dspy.Signature):
     improved_tweet: str = dspy.OutputField(desc="Generated or improved tweet text (max 280 characters)")
 
 class TweetEvaluator(dspy.Signature):
-    """Evaluate a tweet across multiple custom categories. Return scores from 1-9 for each category."""
+    """Evaluate a tweet across multiple custom categories. Ensure the tweet maintains the same meaning as the original text. Return scores from 1-9 for each category."""
     
+    original_text: str = dspy.InputField(desc="Original input text that started the optimization")
+    current_best_tweet: str = dspy.InputField(desc="Current best tweet version for comparison (empty for first evaluation)")
     tweet_text: str = dspy.InputField(desc="Tweet text to evaluate")
     categories: str = dspy.InputField(desc="Comma-separated list of evaluation category descriptions")
-    category_scores: List[int] = dspy.OutputField(desc="List of integer scores (1-9) for each category in order")
+    category_scores: List[int] = dspy.OutputField(desc="List of integer scores (1-9) for each category in order. Ensure the tweet conveys the same meaning as the original text.")
 
 class TweetGeneratorModule(dspy.Module):
     """DSPy module for generating and improving tweets."""
@@ -49,13 +51,15 @@ class TweetEvaluatorModule(dspy.Module):
         super().__init__()
         self.evaluate = dspy.ChainOfThought(TweetEvaluator)
     
-    def forward(self, tweet_text: str, categories: List[str]) -> EvaluationResult:
+    def forward(self, tweet_text: str, categories: List[str], original_text: str = "", current_best_tweet: str = "") -> EvaluationResult:
         """Evaluate a tweet across specified categories."""
         try:
             # Join categories into comma-separated string
             categories_str = ", ".join(categories)
             
             result = self.evaluate(
+                original_text=original_text,
+                current_best_tweet=current_best_tweet,
                 tweet_text=tweet_text,
                 categories=categories_str
             )
