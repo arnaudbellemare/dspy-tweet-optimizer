@@ -66,6 +66,11 @@ COLOR_NEUTRAL = "#ffffff"  # White for no change
 PAGE_TITLE = "DSPy Tweet Optimizer"
 PAGE_LAYOUT = "wide"
 
+# History UI Configuration
+HISTORY_RECENT_INDICATOR = "🕐 "  # Icon for recent history items
+HISTORY_RECENT_COUNT = 3  # Number of items to mark as recent
+HISTORY_TRUNCATE_LENGTH = 75  # Characters to show in history dropdown
+
 # Error Messages
 ERROR_PARSING = "Default evaluation due to parsing error"
 ERROR_VALIDATION = "Default evaluation due to validation error"

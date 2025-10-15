@@ -30,7 +30,10 @@ from constants import (
     SIDEBAR_COL_DELETE,
     MAIN_COL_INPUT,
     MAIN_COL_STATS,
-    INPUT_HEIGHT
+    INPUT_HEIGHT,
+    HISTORY_RECENT_INDICATOR,
+    HISTORY_RECENT_COUNT,
+    HISTORY_TRUNCATE_LENGTH
 )
 
 # Page configuration
@@ -203,8 +206,8 @@ def main() -> None:
                     return "Select from history..."
                 # Find index to show recency
                 idx = st.session_state.input_history.index(x) if x in st.session_state.input_history else -1
-                prefix = "🕐 " if idx < 3 else ""  # Mark 3 most recent with clock icon
-                truncated = x[:75] + "..." if len(x) > 75 else x
+                prefix = HISTORY_RECENT_INDICATOR if idx < HISTORY_RECENT_COUNT else ""
+                truncated = x[:HISTORY_TRUNCATE_LENGTH] + "..." if len(x) > HISTORY_TRUNCATE_LENGTH else x
                 return f"{prefix}{truncated}"
             
             st.selectbox(
