@@ -195,12 +195,22 @@ def main() -> None:
                 st.session_state.main_text_input = st.session_state.history_selector
                 st.session_state.history_selector = ""  # Reset selector to placeholder
         
-        # Input history dropdown
+        # Input history dropdown (most recent first)
         if st.session_state.input_history:
+            # Create formatted options with indicators for recent items
+            def format_history_option(x):
+                if x == "":
+                    return "Select from history..."
+                # Find index to show recency
+                idx = st.session_state.input_history.index(x) if x in st.session_state.input_history else -1
+                prefix = "🕐 " if idx < 3 else ""  # Mark 3 most recent with clock icon
+                truncated = x[:75] + "..." if len(x) > 75 else x
+                return f"{prefix}{truncated}"
+            
             st.selectbox(
                 "Load from history:",
                 options=[""] + st.session_state.input_history,
-                format_func=lambda x: "Select from history..." if x == "" else (x[:80] + "..." if len(x) > 80 else x),
+                format_func=format_history_option,
                 key="history_selector",
                 on_change=on_history_select
             )

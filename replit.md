@@ -55,6 +55,8 @@ Preferred communication style: Simple, everyday language.
 - **Persistent History**: User inputs stored in `input_history.json` (persists across sessions)
 - **Capacity**: Maximum 50 historical inputs (configurable via `MAX_HISTORY_ITEMS`)
 - **Deduplication**: Duplicate inputs removed, most recent occurrence kept at top
+- **Display Order**: Most recent inputs appear first in dropdown (reverse chronological)
+- **Visual Indicator**: 🕐 clock icon marks the 3 most recent entries
 - **UI Integration**: Dropdown selector with "Load from history..." placeholder
 - **Auto-populate**: Selecting history item populates input text area via Streamlit callback
 - **Storage Trigger**: Input added to history when optimization starts
@@ -64,12 +66,17 @@ Preferred communication style: Simple, everyday language.
 # Callback-based selection (app.py)
 def on_history_select():
     if st.session_state.history_selector:
-        st.session_state.input_text_value = st.session_state.history_selector
+        st.session_state.main_text_input = st.session_state.history_selector
+        st.session_state.history_selector = ""  # Reset to placeholder
 
-st.selectbox(..., on_change=on_history_select)
+# History stored with most recent first
+add_to_input_history() prepends: [new_input] + history
+
+# Display with visual indicators
+format_history_option() adds 🕐 to top 3 items
 ```
 
-**Design Decision**: Callback approach ensures reliable UI updates in Streamlit's reactive model. Session state provides single source of truth for input text value.
+**Design Decision**: Reverse chronological order (newest first) makes it easy to quickly access recent work. Callback approach ensures reliable UI updates. Visual indicators help users identify newest entries at a glance.
 
 #### Automatic Optimization (No Buttons)
 - **Auto-Trigger**: Optimization starts automatically when text is entered
