@@ -63,6 +63,7 @@ Preferred communication style: Simple, everyday language.
 - Selected LLM model (default: Claude Sonnet 4.5)
 - Max iterations (default: 10)
 - Patience threshold (default: 5)
+- DSPy cache enabled (default: True)
 - Custom evaluation categories
 
 ## External Dependencies

@@ -55,8 +55,18 @@ def get_dspy_lm(model_name: str):
     except Exception as e:
         raise Exception(f"Failed to create LM: {str(e)}")
 
-def initialize_dspy(model_name: str = "openrouter/anthropic/claude-sonnet-4.5"):
+def initialize_dspy(model_name: str = "openrouter/anthropic/claude-sonnet-4.5", use_cache: bool = True):
     """Initialize DSPy with OpenRouter and selected model."""
+    # Configure cache settings
+    try:
+        dspy.configure_cache(
+            enable_memory_cache=use_cache,
+            enable_disk_cache=use_cache
+        )
+    except Exception as e:
+        # Cache configuration might fail in some environments, continue anyway
+        pass
+    
     # Only configure DSPy once globally
     if not hasattr(dspy, '_replit_configured'):
         try:
@@ -111,5 +121,6 @@ def get_default_settings() -> Dict[str, Any]:
     return {
         "selected_model": "openrouter/anthropic/claude-sonnet-4.5",
         "iterations": 10,
-        "patience": 5
+        "patience": 5,
+        "use_cache": True
     }

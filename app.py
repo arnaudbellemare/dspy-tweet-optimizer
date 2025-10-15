@@ -84,6 +84,8 @@ def initialize_session_state():
         st.session_state.iterations = settings.get("iterations", 10)
     if 'patience' not in st.session_state:
         st.session_state.patience = settings.get("patience", 5)
+    if 'use_cache' not in st.session_state:
+        st.session_state.use_cache = settings.get("use_cache", True)
     if 'no_improvement_count' not in st.session_state:
         st.session_state.no_improvement_count = 0
 
@@ -120,13 +122,22 @@ def main():
         )
         new_model = model_options[selected_model_name]
         
-        # Save settings if model changed
-        if new_model != st.session_state.selected_model:
+        # Cache control
+        use_cache = st.checkbox(
+            "Enable DSPy Cache",
+            value=st.session_state.use_cache,
+            help="Enable DSPy's built-in caching to save API costs and speed up repeated queries"
+        )
+        
+        # Save settings if model or cache changed
+        if new_model != st.session_state.selected_model or use_cache != st.session_state.use_cache:
             st.session_state.selected_model = new_model
+            st.session_state.use_cache = use_cache
             save_settings({
                 "selected_model": st.session_state.selected_model,
                 "iterations": st.session_state.iterations,
-                "patience": st.session_state.patience
+                "patience": st.session_state.patience,
+                "use_cache": st.session_state.use_cache
             })
         
         st.divider()
@@ -155,7 +166,8 @@ def main():
             save_settings({
                 "selected_model": st.session_state.selected_model,
                 "iterations": iterations,
-                "patience": patience
+                "patience": patience,
+                "use_cache": st.session_state.use_cache
             })
         
         st.divider()
@@ -188,9 +200,9 @@ def main():
         else:
             st.warning("No categories defined. Add at least one category to start optimization.")
     
-    # Initialize DSPy with selected model (after model selector is set)
+    # Initialize DSPy with selected model and cache settings (after model selector is set)
     try:
-        initialize_dspy(st.session_state.selected_model)
+        initialize_dspy(st.session_state.selected_model, st.session_state.use_cache)
     except Exception as e:
         st.error(f"Failed to initialize DSPy: {str(e)}")
         return
