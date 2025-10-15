@@ -31,9 +31,13 @@ class HillClimbingOptimizer:
         generator_inputs = {
             "input_text": initial_text,
             "current_tweet": "",
-            "feedback": ""
+            "previous_evaluation": ""
         }
-        current_tweet = self.generator(initial_text)
+        current_tweet = self.generator(
+            input_text=initial_text,
+            current_tweet="",
+            previous_evaluation=None
+        )
         
         evaluator_inputs = {
             "original_text": initial_text,
@@ -54,21 +58,26 @@ class HillClimbingOptimizer:
         yield (current_tweet, current_score, True, patience_counter, generator_inputs, evaluator_inputs)
         
         for iteration in range(1, self.max_iterations):
-            # Generate feedback for improvement
-            feedback = self._generate_feedback(best_tweet, best_score)
-            
-            # Generate improved tweet
+            # Generate improved tweet with previous evaluation as feedback
             try:
+                # Format evaluation for display in generator inputs
+                eval_text = ""
+                if best_score.evaluations:
+                    eval_lines = []
+                    for eval in best_score.evaluations:
+                        eval_lines.append(f"{eval.category} (Score: {eval.score}/9): {eval.reasoning}")
+                    eval_text = "\n".join(eval_lines)
+                
                 generator_inputs = {
                     "input_text": initial_text,
                     "current_tweet": best_tweet,
-                    "feedback": feedback
+                    "previous_evaluation": eval_text
                 }
                 
                 candidate_tweet = self.generator(
                     input_text=initial_text,
                     current_tweet=best_tweet,
-                    feedback=feedback
+                    previous_evaluation=best_score
                 )
                 
                 # Evaluate candidate
@@ -113,18 +122,3 @@ class HillClimbingOptimizer:
                 if patience_counter >= self.patience:
                     break
     
-    def _generate_feedback(self, current_tweet: str, current_score: EvaluationResult) -> str:
-        """Generate feedback for tweet improvement based on current scores."""
-        weak_categories = []
-        
-        for i, (category, score) in enumerate(zip(self.categories, current_score.category_scores)):
-            if score < 7:  # Consider scores below 7 as needing improvement
-                weak_categories.append(f"{category} (current score: {score}/9)")
-        
-        if weak_categories:
-            feedback = f"Focus on improving these areas: {'; '.join(weak_categories)}. "
-            feedback += "Make the tweet more engaging, concise, and impactful while staying within 280 characters."
-        else:
-            feedback = "The tweet is performing well across all categories. Try to make minor refinements for even better performance."
-        
-        return feedback
