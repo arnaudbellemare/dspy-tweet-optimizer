@@ -44,7 +44,7 @@ render_custom_css()
 
 def initialize_session_state() -> None:
     """Initialize session state variables with saved settings."""
-    from utils import load_categories
+    from utils import load_categories, load_input_history
     settings = load_settings()
     
     if 'categories' not in st.session_state:
@@ -73,6 +73,8 @@ def initialize_session_state() -> None:
         st.session_state.generator_inputs = {}
     if 'evaluator_inputs' not in st.session_state:
         st.session_state.evaluator_inputs = {}
+    if 'input_history' not in st.session_state:
+        st.session_state.input_history = load_input_history()
 
 def render_sidebar_configuration() -> tuple:
     """
