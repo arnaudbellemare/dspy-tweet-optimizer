@@ -21,13 +21,15 @@ Preferred communication style: Simple, everyday language.
 
 #### Tweet Generation Pipeline
 - **TweetGeneratorModule**: Uses DSPy's ChainOfThought to generate or improve tweets
-  - Receives: original input text, current best tweet, and improvement feedback
+  - Receives: original input text, current best tweet, and previous evaluation with detailed reasoning
+  - Leverages category-by-category reasoning to make targeted improvements
 - **TweetEvaluatorModule**: Uses DSPy's ChainOfThought for structured evaluation with Pydantic models
   - Receives: original input text, current best tweet, tweet to evaluate, and categories
+  - Outputs: CategoryEvaluation objects with detailed reasoning and scores (1-9) for each category
   - Validates that improved tweets maintain the same meaning as the original
 - **Character Limit Enforcement**: Automatic truncation to 280 characters with ellipsis
 
-**Design Decision**: Separate modules for generation and evaluation enable independent optimization of each concern. Chain-of-thought for both generation and evaluation improves reasoning quality. Providing original text and current best tweet to the evaluator ensures semantic consistency - the evaluator can verify that improved tweets don't drift from the original meaning.
+**Design Decision**: Separate modules for generation and evaluation enable independent optimization of each concern. Chain-of-thought for both generation and evaluation improves reasoning quality. Providing original text and current best tweet to the evaluator ensures semantic consistency. The evaluator now outputs detailed reasoning alongside scores, which the generator uses as rich feedback for targeted improvements.
 
 #### Optimization Algorithm
 - **Strategy**: Hill-climbing algorithm with patience mechanism
@@ -49,12 +51,18 @@ Preferred communication style: Simple, everyday language.
 
 ### Data Models
 
+#### CategoryEvaluation (Pydantic)
+- **category**: str - The evaluation category name
+- **reasoning**: str - Detailed explanation for the score
+- **score**: int - Score from 1-9 with validation
+
 #### EvaluationResult (Pydantic)
-- Validates category scores are integers between 1-9
+- **evaluations**: List[CategoryEvaluation] - List of category evaluations with reasoning
 - Provides total_score() and average_score() calculations
 - Implements comparison operators for hill-climbing decisions
+- Maintains backwards compatibility via category_scores property
 
-**Rationale**: Pydantic provides runtime type checking and validation, ensuring the LLM returns properly formatted evaluation data. This prevents downstream errors and makes the optimization loop robust.
+**Rationale**: Pydantic provides runtime type checking and validation, ensuring the LLM returns properly formatted evaluation data with detailed reasoning. This prevents downstream errors, makes the optimization loop robust, and provides rich feedback for the generator to make targeted improvements.
 
 ### State Management
 - **Session State**: Streamlit session state for UI persistence within a session

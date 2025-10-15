@@ -19,9 +19,15 @@ class EvaluationResult(BaseModel):
     """Pydantic model for tweet evaluation results."""
     
     evaluations: List[CategoryEvaluation] = Field(
-        description="List of category evaluations with reasoning and scores",
-        min_items=1
+        description="List of category evaluations with reasoning and scores"
     )
+    
+    @validator('evaluations')
+    def validate_evaluations(cls, evals):
+        """Ensure we have at least one evaluation."""
+        if not evals or len(evals) < 1:
+            raise ValueError("Must have at least one category evaluation")
+        return evals
     
     @property
     def category_scores(self) -> List[int]:
