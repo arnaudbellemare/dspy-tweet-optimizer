@@ -20,6 +20,10 @@ DEFAULT_SCORE = 5
 # File Paths
 CATEGORIES_FILE = "categories.json"
 SETTINGS_FILE = "settings.json"
+HISTORY_FILE = "input_history.json"
+
+# History Configuration
+MAX_HISTORY_ITEMS = 50  # Maximum number of historical inputs to store
 
 # Model Configuration
 DEFAULT_MODEL = "openrouter/anthropic/claude-sonnet-4.5"
@@ -73,6 +77,8 @@ ERROR_SAVE_CATEGORIES = "Failed to save categories"
 ERROR_LOAD_CATEGORIES = "Failed to load categories"
 ERROR_SAVE_SETTINGS = "Failed to save settings"
 ERROR_LOAD_SETTINGS = "Failed to load settings"
+ERROR_SAVE_HISTORY = "Failed to save input history"
+ERROR_LOAD_HISTORY = "Failed to load input history"
 
 # Cache Configuration
 CACHE_ENABLE_MEMORY = True
