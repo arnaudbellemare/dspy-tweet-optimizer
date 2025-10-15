@@ -49,6 +49,26 @@ Preferred communication style: Simple, everyday language.
 
 **Design Decision**: Pydantic models ensure type safety and validation at the evaluation boundary. Customizable categories allow users to optimize for their specific goals (engagement, clarity, emotional impact, etc.). The 1-9 scale provides sufficient granularity while remaining interpretable.
 
+#### Input History System
+- **Persistent History**: User inputs stored in `input_history.json` (persists across sessions)
+- **Capacity**: Maximum 50 historical inputs (configurable via `MAX_HISTORY_ITEMS`)
+- **Deduplication**: Duplicate inputs removed, most recent occurrence kept at top
+- **UI Integration**: Dropdown selector with "Load from history..." placeholder
+- **Auto-populate**: Selecting history item populates input text area via Streamlit callback
+- **Storage Trigger**: Input added to history when optimization starts
+
+**Implementation Pattern:**
+```python
+# Callback-based selection (app.py)
+def on_history_select():
+    if st.session_state.history_selector:
+        st.session_state.input_text_value = st.session_state.history_selector
+
+st.selectbox(..., on_change=on_history_select)
+```
+
+**Design Decision**: Callback approach ensures reliable UI updates in Streamlit's reactive model. Session state provides single source of truth for input text value.
+
 ### Data Models
 
 #### CategoryEvaluation (Pydantic)
