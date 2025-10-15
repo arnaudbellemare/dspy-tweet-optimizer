@@ -184,19 +184,16 @@ def main() -> None:
     with col1:
         st.subheader("Tweet Input")
         
-        # Initialize input text in session state if not exists
-        if 'input_text_value' not in st.session_state:
-            st.session_state.input_text_value = ""
+        # Initialize main text input in session state if not exists
+        if 'main_text_input' not in st.session_state:
+            st.session_state.main_text_input = ""
         
         # Callback function for history selection
         def on_history_select():
             if st.session_state.history_selector:
-                st.session_state.input_text_value = st.session_state.history_selector
-        
-        # Callback function for text input changes
-        def on_text_change():
-            # Update the input text value from the widget
-            st.session_state.input_text_value = st.session_state.main_text_input
+                # Update the text area directly via its key
+                st.session_state.main_text_input = st.session_state.history_selector
+                st.session_state.history_selector = ""  # Reset selector to placeholder
         
         # Input history dropdown
         if st.session_state.input_history:
@@ -208,19 +205,13 @@ def main() -> None:
                 on_change=on_history_select
             )
         
-        # Text area with value from session state and callback
+        # Text area - use key only (no value parameter to avoid conflicts)
         input_text = st.text_area(
             "Enter your initial tweet concept:",
-            value=st.session_state.input_text_value,
             placeholder="Enter the text you want to optimize into a tweet...",
             height=INPUT_HEIGHT,
-            key="main_text_input",
-            on_change=on_text_change
+            key="main_text_input"
         )
-        
-        # Update session state when user types
-        if input_text != st.session_state.input_text_value:
-            st.session_state.input_text_value = input_text
         
         # Current best tweet display
         render_best_tweet_display(st.session_state.current_tweet)
