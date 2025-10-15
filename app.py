@@ -179,10 +179,27 @@ def main() -> None:
     
     with col1:
         st.subheader("Tweet Input")
+        
+        # Input history dropdown
+        if st.session_state.input_history:
+            selected_history = st.selectbox(
+                "Load from history:",
+                options=[""] + st.session_state.input_history,
+                format_func=lambda x: "Select from history..." if x == "" else (x[:80] + "..." if len(x) > 80 else x),
+                key="history_selector"
+            )
+            
+            # If a history item is selected, use it as default value
+            default_value = selected_history if selected_history else ""
+        else:
+            default_value = ""
+        
         input_text = st.text_area(
             "Enter your initial tweet concept:",
+            value=default_value,
             placeholder="Enter the text you want to optimize into a tweet...",
-            height=INPUT_HEIGHT
+            height=INPUT_HEIGHT,
+            key="input_text_area"
         )
         
         # Optimization controls
@@ -226,6 +243,12 @@ def main() -> None:
 
     # Start optimization process
     if start_optimization:
+        from utils import add_to_input_history, save_input_history
+        
+        # Add input to history
+        st.session_state.input_history = add_to_input_history(st.session_state.input_history, input_text)
+        save_input_history(st.session_state.input_history)
+        
         st.session_state.optimization_running = True
         st.session_state.iteration_count = 0
         st.session_state.current_tweet = input_text
