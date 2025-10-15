@@ -75,6 +75,8 @@ def initialize_session_state() -> None:
         st.session_state.evaluator_inputs = {}
     if 'input_history' not in st.session_state:
         st.session_state.input_history = load_input_history()
+    if 'last_optimized_input' not in st.session_state:
+        st.session_state.last_optimized_input = ""
 
 def render_sidebar_configuration() -> tuple:
     """
@@ -211,18 +213,6 @@ def main() -> None:
         if input_text != st.session_state.input_text_value:
             st.session_state.input_text_value = input_text
         
-        # Optimization controls
-        col1_1, col1_2 = st.columns(2)
-        with col1_1:
-            start_optimization = st.button(
-                "Start Optimization",
-                disabled=not input_text.strip() or len(st.session_state.categories) == 0 or st.session_state.optimization_running
-            )
-        with col1_2:
-            if st.button("Stop Optimization", disabled=not st.session_state.optimization_running):
-                st.session_state.optimization_running = False
-                st.rerun()
-        
         # Current best tweet display
         render_best_tweet_display(st.session_state.current_tweet)
         
@@ -250,14 +240,23 @@ def main() -> None:
             scores = [sum(score.category_scores)/len(score.category_scores) for score in st.session_state.scores_history]
             st.line_chart(scores)
 
-    # Start optimization process
-    if start_optimization:
+    # Auto-start optimization when input is available and different from last optimized
+    should_optimize = (
+        input_text.strip() and 
+        len(st.session_state.categories) > 0 and 
+        not st.session_state.optimization_running and
+        input_text.strip() != st.session_state.last_optimized_input
+    )
+    
+    if should_optimize:
         from utils import add_to_input_history, save_input_history
         
         # Add input to history
         st.session_state.input_history = add_to_input_history(st.session_state.input_history, input_text)
         save_input_history(st.session_state.input_history)
         
+        # Track this input as optimized
+        st.session_state.last_optimized_input = input_text.strip()
         st.session_state.optimization_running = True
         st.session_state.iteration_count = 0
         st.session_state.current_tweet = input_text
