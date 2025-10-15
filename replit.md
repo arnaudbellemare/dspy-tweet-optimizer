@@ -101,6 +101,44 @@ Preferred communication style: Simple, everyday language.
 - **settings.json**: Stores user preferences for model, iterations, and patience (persists across sessions)
 - **Environment Variables**: OPENROUTER_API_KEY for API authentication
 
+## Code Organization and Maintainability
+
+### Module Structure
+
+**Core Modules:**
+- **constants.py**: Centralized configuration containing all magic numbers, colors, defaults, and error messages
+- **helpers.py**: Reusable utility functions to eliminate code duplication
+- **ui_components.py**: Modular UI rendering functions for improved code organization
+- **models.py**: Pydantic data models for type safety
+- **dspy_modules.py**: DSPy module implementations (generator and evaluator)
+- **hill_climbing.py**: Optimization algorithm implementation
+- **utils.py**: Utility functions for file I/O and DSPy initialization
+- **app.py**: Main application entry point with clean, focused functions
+
+**Key Design Principles:**
+- DRY (Don't Repeat Yourself): Eliminated code duplication through helper functions
+- Single Responsibility: Each function has one clear purpose
+- Constants over Magic Numbers: All hardcoded values centralized in constants.py
+- Type Safety: Comprehensive type hints throughout codebase
+- Modular UI: UI components separated for reusability and testing
+
+**Helper Functions:**
+- `format_evaluation_for_generator()`: Formats evaluation results for generator input (eliminates duplication)
+- `build_settings_dict()`: Constructs settings dictionary for persistence
+- `truncate_tweet()`: Handles tweet truncation with configurable suffix
+- `truncate_category_display()`: Truncates category names for display
+
+**UI Components:**
+- `render_custom_css()`: Applies application theme
+- `render_main_header()`: Main page header
+- `render_category_management()`: Category CRUD interface
+- `render_best_tweet_display()`: Tweet display component
+- `render_generator_inputs()`: Generator input transparency
+- `render_evaluator_inputs()`: Evaluator input transparency
+- `render_optimization_stats()`: Live optimization statistics
+- `render_latest_evaluation()`: Evaluation results with reasoning
+- `render_score_history()`: Detailed score visualization
+
 ## Technical Implementation Notes
 
 ### DSPy Configuration Pattern (Thread-Safe Model Switching)
