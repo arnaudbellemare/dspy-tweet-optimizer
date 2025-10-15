@@ -116,16 +116,23 @@ Preferred communication style: Simple, everyday language.
 
 ### Test Infrastructure
 - **Framework**: pytest with pytest-mock
-- **Coverage**: 48 comprehensive unit tests
-- **Execution Time**: < 10 seconds
+- **Total Coverage**: 72 comprehensive tests (48 unit + 24 integration)
+- **Execution Time**: ~7 seconds
 - **Location**: `tests/` directory
 
-### Test Coverage
+### Test Types
+
+#### Unit Tests (48 tests)
 - ✅ **Pydantic Models**: Score validation, comparisons, field requirements
 - ✅ **Helper Functions**: Text formatting, truncation, settings management
 - ✅ **Session State Manager**: Initialization, updates, state reset
 - ✅ **Utility Functions**: File I/O, input history, tweet processing
 - ✅ **Mocked Dependencies**: Streamlit session_state, file operations
+
+#### Integration Tests (24 tests)
+- ✅ **Optimization Flow**: Hill-climbing algorithm with patience, max iterations, score improvements
+- ✅ **File Operations**: Real file I/O with temporary directories, cross-file workflows
+- ✅ **DSPy Modules**: Generator/evaluator interaction, feedback loops, pipeline testing
 
 ### Running Tests
 ```bash
@@ -135,16 +142,30 @@ pytest tests/
 # Run with verbose output
 pytest tests/ -v
 
+# Run only unit tests
+pytest tests/ --ignore=tests/integration/
+
+# Run only integration tests
+pytest tests/integration/
+
 # Run specific test file
 pytest tests/test_models.py
 ```
 
 ### Test Organization
+
+**Unit Tests** (`tests/`):
 - **conftest.py**: Shared fixtures (sample data, mock objects)
 - **test_models.py**: Pydantic model validation tests
 - **test_helpers.py**: Helper function tests
 - **test_session_state_manager.py**: State management tests
 - **test_utils.py**: Utility function tests
 - **MockSessionState**: Custom mock class simulating Streamlit's session_state
+
+**Integration Tests** (`tests/integration/`):
+- **conftest.py**: Integration test fixtures (temp directories, mock LM responses)
+- **test_optimization_flow.py**: Hill-climbing algorithm integration
+- **test_file_operations.py**: File I/O with actual files
+- **test_dspy_modules.py**: DSPy generator/evaluator integration
 
 See `tests/README.md` for detailed testing documentation.

@@ -115,17 +115,26 @@ Adjust optimization parameters in the Settings section:
 Run the comprehensive test suite:
 
 ```bash
-# Run all tests
+# Run all tests (unit + integration)
 pytest tests/
 
 # Run with verbose output
 pytest tests/ -v
 
+# Run only unit tests
+pytest tests/ --ignore=tests/integration/
+
+# Run only integration tests
+pytest tests/integration/
+
 # Run specific test file
 pytest tests/test_models.py
 ```
 
-**Test Coverage**: 48 tests covering models, helpers, state management, and utilities.
+**Test Coverage**: 
+- **72 total tests** (48 unit + 24 integration)
+- **Unit tests**: Models, helpers, state management, utilities
+- **Integration tests**: Optimization flow, file operations, DSPy module interactions
 
 ## Technology Stack
 
