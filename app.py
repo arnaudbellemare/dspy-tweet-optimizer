@@ -13,7 +13,6 @@ from utils import save_categories, load_categories, initialize_dspy, get_dspy_lm
 # Page configuration
 st.set_page_config(
     page_title="DSPy Tweet Optimizer",
-    page_icon="🎸",
     layout="wide"
 )
 
@@ -92,11 +91,11 @@ def main():
     initialize_session_state()
 
     # Main header
-    st.markdown('<h1 class="main-header">🎸 DSPy Tweet Optimizer 🎸</h1>', unsafe_allow_html=True)
+    st.markdown('<h1 class="main-header">DSPy Tweet Optimizer</h1>', unsafe_allow_html=True)
     
     # Sidebar configuration
     with st.sidebar:
-        st.header("⚙️ Configuration")
+        st.header("Configuration")
         
         # Model selection
         st.subheader("Model Settings")
@@ -165,7 +164,7 @@ def main():
         st.subheader("Evaluation Categories")
         
         # Add new category
-        with st.expander("➕ Add New Category"):
+        with st.expander("Add New Category"):
             new_category = st.text_area("Category Description", placeholder="e.g., Engagement potential of the tweet")
             if st.button("Add Category"):
                 if new_category.strip():
@@ -182,7 +181,7 @@ def main():
                 with col1:
                     st.markdown(f'<div class="category-item">{category}</div>', unsafe_allow_html=True)
                 with col2:
-                    if st.button("🗑️", key=f"delete_{i}"):
+                    if st.button("Delete", key=f"delete_{i}"):
                         st.session_state.categories.pop(i)
                         save_categories(st.session_state.categories)
                         st.rerun()
@@ -200,7 +199,7 @@ def main():
     col1, col2 = st.columns([2, 1])
     
     with col1:
-        st.subheader("📝 Tweet Input")
+        st.subheader("Tweet Input")
         input_text = st.text_area(
             "Enter your initial tweet concept:",
             placeholder="Enter the text you want to optimize into a tweet...",
@@ -211,16 +210,16 @@ def main():
         col1_1, col1_2 = st.columns(2)
         with col1_1:
             start_optimization = st.button(
-                "🚀 Start Optimization",
+                "Start Optimization",
                 disabled=not input_text.strip() or len(st.session_state.categories) == 0 or st.session_state.optimization_running
             )
         with col1_2:
-            if st.button("🛑 Stop Optimization", disabled=not st.session_state.optimization_running):
+            if st.button("Stop Optimization", disabled=not st.session_state.optimization_running):
                 st.session_state.optimization_running = False
                 st.rerun()
         
         # Current best tweet display
-        st.subheader("🏆 Current Best Tweet")
+        st.subheader("Current Best Tweet")
         if st.session_state.current_tweet:
             # Use safe container approach - apply styling to container, display content safely
             st.markdown('<div class="best-tweet-container">', unsafe_allow_html=True)
@@ -230,7 +229,7 @@ def main():
             st.info("No optimized tweet yet. Start optimization to see results.")
     
     with col2:
-        st.subheader("📊 Optimization Stats")
+        st.subheader("Optimization Stats")
         
         # Iteration info with live update placeholders
         st.markdown(f'<div class="iteration-info">', unsafe_allow_html=True)
@@ -260,13 +259,13 @@ def main():
         # Score breakdown
         if st.session_state.scores_history and len(st.session_state.scores_history) > 0:
             latest_scores = st.session_state.scores_history[-1]
-            st.subheader("📈 Latest Scores")
+            st.subheader("Latest Scores")
             for i, (category, score) in enumerate(zip(st.session_state.categories, latest_scores.category_scores)):
                 st.markdown(f'<div class="score-display">{category[:30]}...: {score}/9</div>', unsafe_allow_html=True)
         
         # Progress visualization
         if len(st.session_state.scores_history) > 0:
-            st.subheader("📉 Score History")
+            st.subheader("Score History")
             scores = [sum(score.category_scores)/len(score.category_scores) for score in st.session_state.scores_history]
             st.line_chart(scores)
 
@@ -322,9 +321,9 @@ def main():
                     # Update progress
                     progress_bar.progress((iteration + 1) / iterations)
                     if early_stop:
-                        status_text.write(f"⏹️ Stopped early at iteration {iteration + 1} - No improvement for {patience} iterations")
+                        status_text.write(f"Stopped early at iteration {iteration + 1} - No improvement for {patience} iterations")
                     else:
-                        status_text.write(f"Iteration {iteration + 1}/{iterations} - {'✅ Improved!' if is_improvement else '⏭️ No improvement'}")
+                        status_text.write(f"Iteration {iteration + 1}/{iterations} - {'Improved!' if is_improvement else 'No improvement'}")
                     
                     # Brief pause to allow UI to update visibly
                     time.sleep(0.1)
@@ -338,19 +337,19 @@ def main():
             st.session_state.optimization_running = False
             progress_bar.progress(1.0)
             if early_stop:
-                status_text.write(f"⏹️ Optimization stopped - No improvement for {patience} iterations")
+                status_text.write(f"Optimization stopped - No improvement for {patience} iterations")
             else:
-                status_text.write("✅ Optimization completed!")
+                status_text.write("Optimization completed!")
             # Rerun once at the end to show final results
             st.rerun()
     
     # Detailed Score History Graph (full width)
     if st.session_state.scores_history and len(st.session_state.scores_history) > 0:
         st.divider()
-        st.subheader("📊 Detailed Score History")
+        st.subheader("Detailed Score History")
         
         # Create tabs for different views
-        tab1, tab2 = st.tabs(["📈 Average Score", "🎯 Category Breakdown"])
+        tab1, tab2 = st.tabs(["Average Score", "Category Breakdown"])
         
         with tab1:
             # Average score over iterations
