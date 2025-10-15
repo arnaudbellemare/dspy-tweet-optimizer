@@ -3,9 +3,25 @@ import os
 import streamlit as st
 import dspy
 from typing import List, Dict, Any
-
-CATEGORIES_FILE = "categories.json"
-SETTINGS_FILE = "settings.json"
+from constants import (
+    CATEGORIES_FILE,
+    SETTINGS_FILE,
+    DEFAULT_CATEGORIES,
+    DEFAULT_MODEL,
+    DEFAULT_ITERATIONS,
+    DEFAULT_PATIENCE,
+    DEFAULT_USE_CACHE,
+    OPENROUTER_API_BASE,
+    OPENROUTER_MAX_TOKENS,
+    OPENROUTER_TEMPERATURE,
+    ERROR_NO_API_KEY,
+    ERROR_SAVE_CATEGORIES,
+    ERROR_LOAD_CATEGORIES,
+    ERROR_SAVE_SETTINGS,
+    ERROR_LOAD_SETTINGS,
+    ERROR_DSPy_INIT,
+    TWEET_MAX_LENGTH
+)
 
 def save_categories(categories: List[str]) -> None:
     """Save categories to JSON file."""
@@ -13,7 +29,7 @@ def save_categories(categories: List[str]) -> None:
         with open(CATEGORIES_FILE, 'w') as f:
             json.dump(categories, f, indent=2)
     except Exception as e:
-        st.error(f"Failed to save categories: {str(e)}")
+        st.error(f"{ERROR_SAVE_CATEGORIES}: {str(e)}")
 
 def load_categories() -> List[str]:
     """Load categories from JSON file."""
@@ -23,17 +39,10 @@ def load_categories() -> List[str]:
                 categories = json.load(f)
                 return categories if isinstance(categories, list) else []
         else:
-            # Default categories if file doesn't exist
-            default_categories = [
-                "Engagement potential - how likely users are to like, retweet, or reply",
-                "Clarity and readability - how easy the tweet is to understand",
-                "Emotional impact - how well the tweet evokes feelings or reactions",
-                "Relevance to target audience - how well it resonates with intended readers"
-            ]
-            save_categories(default_categories)
-            return default_categories
+            save_categories(DEFAULT_CATEGORIES)
+            return DEFAULT_CATEGORIES
     except Exception as e:
-        st.error(f"Failed to load categories: {str(e)}")
+        st.error(f"{ERROR_LOAD_CATEGORIES}: {str(e)}")
         return []
 
 @st.cache_resource
@@ -42,20 +51,20 @@ def get_dspy_lm(model_name: str):
     try:
         openrouter_key = os.getenv("OPENROUTER_API_KEY")
         if not openrouter_key:
-            raise ValueError("OPENROUTER_API_KEY environment variable is required")
+            raise ValueError(ERROR_NO_API_KEY)
         
         lm = dspy.LM(
             model=model_name,
             api_key=openrouter_key,
-            api_base="https://openrouter.ai/api/v1",
-            max_tokens=4096,
-            temperature=0.7
+            api_base=OPENROUTER_API_BASE,
+            max_tokens=OPENROUTER_MAX_TOKENS,
+            temperature=OPENROUTER_TEMPERATURE
         )
         return lm
     except Exception as e:
         raise Exception(f"Failed to create LM: {str(e)}")
 
-def initialize_dspy(model_name: str = "openrouter/anthropic/claude-sonnet-4.5", use_cache: bool = True):
+def initialize_dspy(model_name: str = DEFAULT_MODEL, use_cache: bool = DEFAULT_USE_CACHE) -> bool:
     """Initialize DSPy with OpenRouter and selected model."""
     # Configure cache settings
     try:
@@ -63,7 +72,7 @@ def initialize_dspy(model_name: str = "openrouter/anthropic/claude-sonnet-4.5", 
             enable_memory_cache=use_cache,
             enable_disk_cache=use_cache
         )
-    except Exception as e:
+    except Exception:
         # Cache configuration might fail in some environments, continue anyway
         pass
     
@@ -73,9 +82,9 @@ def initialize_dspy(model_name: str = "openrouter/anthropic/claude-sonnet-4.5", 
             # Get the LM for the default model
             default_lm = get_dspy_lm(model_name)
             dspy.configure(lm=default_lm)
-            dspy._replit_configured = True
+            dspy._replit_configured = True  # type: ignore
         except Exception as e:
-            raise Exception(f"DSPy initialization failed: {str(e)}")
+            raise Exception(f"{ERROR_DSPy_INIT}: {str(e)}")
     
     return True
 
@@ -90,7 +99,7 @@ def calculate_tweet_length(tweet: str) -> int:
 def is_valid_tweet(tweet: str) -> bool:
     """Check if tweet is valid (not empty and within character limit)."""
     cleaned_tweet = tweet.strip()
-    return bool(cleaned_tweet) and len(cleaned_tweet) <= 280
+    return bool(cleaned_tweet) and len(cleaned_tweet) <= TWEET_MAX_LENGTH
 
 def save_settings(settings: Dict[str, Any]) -> None:
     """Save settings to JSON file."""
@@ -98,7 +107,7 @@ def save_settings(settings: Dict[str, Any]) -> None:
         with open(SETTINGS_FILE, 'w') as f:
             json.dump(settings, f, indent=2)
     except Exception as e:
-        st.error(f"Failed to save settings: {str(e)}")
+        st.error(f"{ERROR_SAVE_SETTINGS}: {str(e)}")
 
 def load_settings() -> Dict[str, Any]:
     """Load settings from JSON file."""
@@ -113,14 +122,14 @@ def load_settings() -> Dict[str, Any]:
             save_settings(default_settings)
             return default_settings
     except Exception as e:
-        st.error(f"Failed to load settings: {str(e)}")
+        st.error(f"{ERROR_LOAD_SETTINGS}: {str(e)}")
         return get_default_settings()
 
 def get_default_settings() -> Dict[str, Any]:
     """Get default settings."""
     return {
-        "selected_model": "openrouter/anthropic/claude-sonnet-4.5",
-        "iterations": 10,
-        "patience": 5,
-        "use_cache": True
+        "selected_model": DEFAULT_MODEL,
+        "iterations": DEFAULT_ITERATIONS,
+        "patience": DEFAULT_PATIENCE,
+        "use_cache": DEFAULT_USE_CACHE
     }

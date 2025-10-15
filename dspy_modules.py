@@ -1,6 +1,19 @@
 import dspy
 from typing import List, Optional
 from models import EvaluationResult, CategoryEvaluation
+from constants import (
+    TWEET_MAX_LENGTH,
+    TWEET_TRUNCATION_SUFFIX,
+    TWEET_TRUNCATION_LENGTH,
+    DEFAULT_SCORE,
+    ERROR_PARSING,
+    ERROR_VALIDATION,
+    ERROR_GENERATION,
+    ERROR_EVALUATION,
+    MIN_SCORE,
+    MAX_SCORE
+)
+from helpers import format_evaluation_for_generator, truncate_tweet
 
 class TweetGenerator(dspy.Signature):
     """Generate or improve a tweet based on input text and detailed evaluation feedback with reasoning."""
@@ -8,16 +21,18 @@ class TweetGenerator(dspy.Signature):
     input_text: str = dspy.InputField(desc="Original text or current tweet to improve")
     current_tweet: str = dspy.InputField(desc="Current best tweet version (empty for first generation)")
     previous_evaluation: str = dspy.InputField(desc="Previous evaluation with category-by-category reasoning and scores (empty for first generation)")
-    improved_tweet: str = dspy.OutputField(desc="Generated or improved tweet text (max 280 characters)")
+    improved_tweet: str = dspy.OutputField(desc=f"Generated or improved tweet text (max {TWEET_MAX_LENGTH} characters)")
 
 class TweetEvaluator(dspy.Signature):
-    """Evaluate a tweet across multiple custom categories. For each category, provide detailed reasoning explaining the score, then assign a score from 1-9. Ensure the tweet maintains the same meaning as the original text."""
+    """Evaluate a tweet across multiple custom categories. For each category, provide detailed reasoning explaining the score, then assign a score. Ensure the tweet maintains the same meaning as the original text."""
     
     original_text: str = dspy.InputField(desc="Original input text that started the optimization")
     current_best_tweet: str = dspy.InputField(desc="Current best tweet version for comparison (empty for first evaluation)")
     tweet_text: str = dspy.InputField(desc="Tweet text to evaluate")
     categories: str = dspy.InputField(desc="Comma-separated list of evaluation category descriptions")
-    evaluations: List[CategoryEvaluation] = dspy.OutputField(desc="List of evaluations with category name, detailed reasoning, and score (1-9) for each category. Ensure the tweet conveys the same meaning as the original text.")
+    evaluations: List[CategoryEvaluation] = dspy.OutputField(
+        desc=f"List of evaluations with category name, detailed reasoning, and score ({MIN_SCORE}-{MAX_SCORE}) for each category. Ensure the tweet conveys the same meaning as the original text."
+    )
 
 class TweetGeneratorModule(dspy.Module):
     """DSPy module for generating and improving tweets."""
@@ -30,12 +45,7 @@ class TweetGeneratorModule(dspy.Module):
         """Generate or improve a tweet."""
         try:
             # Format previous evaluation as text
-            eval_text = ""
-            if previous_evaluation and previous_evaluation.evaluations:
-                eval_lines = []
-                for eval in previous_evaluation.evaluations:
-                    eval_lines.append(f"{eval.category} (Score: {eval.score}/9): {eval.reasoning}")
-                eval_text = "\n".join(eval_lines)
+            eval_text = format_evaluation_for_generator(previous_evaluation)
             
             result = self.generate(
                 input_text=input_text,
@@ -43,14 +53,12 @@ class TweetGeneratorModule(dspy.Module):
                 previous_evaluation=eval_text
             )
             
-            # Ensure tweet doesn't exceed 280 characters
-            tweet = result.improved_tweet.strip()
-            if len(tweet) > 280:
-                tweet = tweet[:277] + "..."
+            # Ensure tweet doesn't exceed character limit
+            tweet = truncate_tweet(result.improved_tweet, TWEET_MAX_LENGTH, TWEET_TRUNCATION_SUFFIX)
             
             return tweet
         except Exception as e:
-            raise Exception(f"Tweet generation failed: {str(e)}")
+            raise Exception(f"{ERROR_GENERATION}: {str(e)}")
 
 class TweetEvaluatorModule(dspy.Module):
     """DSPy module for evaluating tweets across custom categories."""
@@ -81,8 +89,8 @@ class TweetEvaluatorModule(dspy.Module):
                 evaluations = [
                     CategoryEvaluation(
                         category=cat,
-                        reasoning="Default evaluation due to parsing error",
-                        score=5
+                        reasoning=ERROR_PARSING,
+                        score=DEFAULT_SCORE
                     ) for cat in categories
                 ]
             else:
@@ -91,7 +99,7 @@ class TweetEvaluatorModule(dspy.Module):
                 for i, eval in enumerate(evaluations):
                     try:
                         # Ensure score is valid
-                        score = max(1, min(9, int(eval.score)))
+                        score = max(MIN_SCORE, min(MAX_SCORE, int(eval.score)))
                         validated_evals.append(CategoryEvaluation(
                             category=categories[i] if i < len(categories) else eval.category,
                             reasoning=eval.reasoning if eval.reasoning else "No reasoning provided",
@@ -100,8 +108,8 @@ class TweetEvaluatorModule(dspy.Module):
                     except (ValueError, TypeError, AttributeError):
                         validated_evals.append(CategoryEvaluation(
                             category=categories[i] if i < len(categories) else "Unknown",
-                            reasoning="Default evaluation due to validation error",
-                            score=5
+                            reasoning=ERROR_VALIDATION,
+                            score=DEFAULT_SCORE
                         ))
                 evaluations = validated_evals
             
@@ -114,8 +122,8 @@ class TweetEvaluatorModule(dspy.Module):
             default_evals = [
                 CategoryEvaluation(
                     category=cat,
-                    reasoning=f"Default evaluation due to error: {str(e)}",
-                    score=5
+                    reasoning=f"{ERROR_EVALUATION}: {str(e)}",
+                    score=DEFAULT_SCORE
                 ) for cat in categories
             ]
             return EvaluationResult(evaluations=default_evals)

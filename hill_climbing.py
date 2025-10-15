@@ -1,7 +1,8 @@
-from typing import List, Iterator, Tuple
+from typing import List, Iterator, Tuple, Dict
 import dspy
 from models import EvaluationResult
 from dspy_modules import TweetGeneratorModule, TweetEvaluatorModule
+from helpers import format_evaluation_for_generator
 
 class HillClimbingOptimizer:
     """Hill climbing optimizer for tweet improvement."""
@@ -20,7 +21,7 @@ class HillClimbingOptimizer:
         self.max_iterations = max_iterations
         self.patience = patience
     
-    def optimize(self, initial_text: str) -> Iterator[Tuple[str, EvaluationResult, bool, int, dict, dict]]:
+    def optimize(self, initial_text: str) -> Iterator[Tuple[str, EvaluationResult, bool, int, Dict, Dict]]:
         """
         Optimize tweet using hill climbing algorithm.
         
@@ -61,12 +62,7 @@ class HillClimbingOptimizer:
             # Generate improved tweet with previous evaluation as feedback
             try:
                 # Format evaluation for display in generator inputs
-                eval_text = ""
-                if best_score.evaluations:
-                    eval_lines = []
-                    for eval in best_score.evaluations:
-                        eval_lines.append(f"{eval.category} (Score: {eval.score}/9): {eval.reasoning}")
-                    eval_text = "\n".join(eval_lines)
+                eval_text = format_evaluation_for_generator(best_score)
                 
                 generator_inputs = {
                     "input_text": initial_text,
