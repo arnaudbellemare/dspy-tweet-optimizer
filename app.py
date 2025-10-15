@@ -255,9 +255,9 @@ def main():
                 current = st.session_state.generator_inputs.get("current_tweet", "")
                 st.write(current if current else "(empty for first iteration)")
                 
-                st.write("**Feedback:**")
-                feedback = st.session_state.generator_inputs.get("feedback", "")
-                st.write(feedback if feedback else "(empty for first iteration)")
+                st.write("**Previous Evaluation:**")
+                prev_eval = st.session_state.generator_inputs.get("previous_evaluation", "")
+                st.write(prev_eval if prev_eval else "(empty for first iteration)")
         
         # Evaluator inputs display
         if st.session_state.evaluator_inputs:
@@ -301,12 +301,20 @@ def main():
         
         st.markdown('</div>', unsafe_allow_html=True)
         
-        # Score breakdown
+        # Score breakdown with reasoning
         if st.session_state.scores_history and len(st.session_state.scores_history) > 0:
-            latest_scores = st.session_state.scores_history[-1]
-            st.subheader("Latest Scores")
-            for i, (category, score) in enumerate(zip(st.session_state.categories, latest_scores.category_scores)):
-                st.markdown(f'<div class="score-display">{category[:30]}...: {score}/9</div>', unsafe_allow_html=True)
+            latest_evaluation = st.session_state.scores_history[-1]
+            st.subheader("Latest Evaluation")
+            
+            # Display each category evaluation with reasoning
+            if hasattr(latest_evaluation, 'evaluations') and latest_evaluation.evaluations:
+                for eval in latest_evaluation.evaluations:
+                    with st.expander(f"**{eval.category}: {eval.score}/9**", expanded=False):
+                        st.write(eval.reasoning)
+            else:
+                # Fallback for old format (backwards compatibility)
+                for i, (category, score) in enumerate(zip(st.session_state.categories, latest_evaluation.category_scores)):
+                    st.markdown(f'<div class="score-display">{category[:30]}...: {score}/9</div>', unsafe_allow_html=True)
         
         # Progress visualization
         if len(st.session_state.scores_history) > 0:
