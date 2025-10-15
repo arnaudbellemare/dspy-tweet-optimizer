@@ -84,6 +84,10 @@ format_history_option() adds 🕐 to top 3 items
 - **User Flow**: Type text → Tab out → Optimization starts automatically
 - **UI Feedback**: Current Best Tweet displays input text immediately, then updates with optimized versions
 - **Deduplication**: Tracks last optimized input to prevent redundant runs
+- **Progress Display**: Progress bar and status text appear above "Current Best Tweet" during optimization
+  - Status format: `**Iteration X/Y** | Current: Z.ZZ | Best: Z.ZZ | No Improvement: X/Y`
+  - Shows "✓ Improved!" when score increases, "⚠️ Stopping early" when patience reached
+  - Completion message: `✓ **Optimization Complete** | X iterations | Best Score: Z.ZZ`
 
 **Implementation Pattern:**
 ```python

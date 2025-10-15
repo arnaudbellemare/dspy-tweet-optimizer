@@ -223,6 +223,10 @@ def main() -> None:
             key="main_text_input"
         )
         
+        # Progress bar and status (shown during optimization, above best tweet)
+        progress_placeholder = st.empty()
+        status_placeholder = st.empty()
+        
         # Current best tweet display
         render_best_tweet_display(st.session_state.current_tweet)
         
@@ -304,9 +308,8 @@ def main() -> None:
             patience=patience
         )
         
-        # Create progress placeholders
-        progress_bar = st.progress(0)
-        status_text = st.empty()
+        # Use the progress placeholders created in col1 (above best tweet)
+        # Progress bar and status are now shown above the best tweet display
         
         early_stop = False
         try:
@@ -338,12 +341,21 @@ def main() -> None:
                     if patience_counter >= patience:
                         early_stop = True
                     
-                    # Update progress
-                    progress_bar.progress((iteration + 1) / iterations)
+                    # Update progress bar and status (above best tweet)
+                    progress_placeholder.progress((iteration + 1) / iterations)
+                    
+                    # Get current score for this iteration
+                    current_score = sum(scores.category_scores) / len(scores.category_scores)
+                    
+                    # Format status with iteration, scores, and no improvement count
+                    status_msg = f"**Iteration {iteration + 1}/{iterations}** | Current: {current_score:.2f} | Best: {st.session_state.best_score:.2f} | No Improvement: {patience_counter}/{patience}"
+                    
                     if early_stop:
-                        status_text.write(f"Stopped early at iteration {iteration + 1} - No improvement for {patience} iterations")
-                    else:
-                        status_text.write(f"Iteration {iteration + 1}/{iterations} - {'Improved!' if is_improvement else 'No improvement'}")
+                        status_msg += f" | ⚠️ Stopping early"
+                    elif is_improvement:
+                        status_msg += " | ✓ Improved!"
+                    
+                    status_placeholder.markdown(status_msg)
                     
                     # Brief pause to allow UI to update visibly
                     time.sleep(ITERATION_SLEEP_TIME)
@@ -355,11 +367,16 @@ def main() -> None:
             st.error(f"Optimization failed: {str(e)}")
         finally:
             st.session_state.optimization_running = False
-            progress_bar.progress(1.0)
+            # Complete the progress bar
+            progress_placeholder.progress(1.0)
+            
+            # Show completion message with all stats
             if early_stop:
-                status_text.write(f"Optimization stopped - No improvement for {patience} iterations")
+                final_msg = f"✓ **Optimization Complete** | {st.session_state.iteration_count} iterations | Best Score: {st.session_state.best_score:.2f} | Stopped early (no improvement)"
             else:
-                status_text.write("Optimization completed!")
+                final_msg = f"✓ **Optimization Complete** | {st.session_state.iteration_count} iterations | Best Score: {st.session_state.best_score:.2f}"
+            
+            status_placeholder.markdown(final_msg)
             # Rerun once at the end to show final results
             st.rerun()
     
