@@ -1,69 +1,50 @@
 import streamlit as st
-import json
-import os
 import time
-from typing import List, Dict
 import dspy
-import pandas as pd
 from dspy_modules import TweetGeneratorModule, TweetEvaluatorModule
 from models import EvaluationResult
 from hill_climbing import HillClimbingOptimizer
-from utils import save_categories, load_categories, initialize_dspy, get_dspy_lm, save_settings, load_settings
+from utils import initialize_dspy, get_dspy_lm, save_settings, load_settings
+from ui_components import (
+    render_custom_css,
+    render_main_header,
+    render_category_management,
+    render_best_tweet_display,
+    render_generator_inputs,
+    render_evaluator_inputs,
+    render_optimization_stats,
+    render_latest_evaluation,
+    render_score_history
+)
+from helpers import build_settings_dict
+from constants import (
+    PAGE_TITLE,
+    PAGE_LAYOUT,
+    AVAILABLE_MODELS,
+    DEFAULT_MODEL,
+    DEFAULT_ITERATIONS,
+    DEFAULT_PATIENCE,
+    DEFAULT_USE_CACHE,
+    ITERATION_SLEEP_TIME,
+    SIDEBAR_COL_CATEGORY,
+    SIDEBAR_COL_DELETE,
+    MAIN_COL_INPUT,
+    MAIN_COL_STATS,
+    INPUT_HEIGHT
+)
 
 # Page configuration
 st.set_page_config(
-    page_title="DSPy Tweet Optimizer",
-    layout="wide"
+    page_title=PAGE_TITLE,
+    layout=PAGE_LAYOUT
 )
 
-# Custom CSS for pop punk theme
-st.markdown("""
-<style>
-    .main-header {
-        color: #ff0000;
-        text-align: center;
-        font-size: 2.5rem;
-        font-weight: bold;
-        margin-bottom: 2rem;
-    }
-    .category-item {
-        background-color: #1a1a1a;
-        padding: 1rem;
-        margin: 0.5rem 0;
-        border-left: 3px solid #ff0000;
-        border-radius: 5px;
-    }
-    .score-display {
-        font-size: 1.2rem;
-        font-weight: bold;
-        color: #ff0000;
-    }
-    .iteration-info {
-        background-color: #1a1a1a;
-        padding: 1rem;
-        border-radius: 5px;
-        margin: 1rem 0;
-    }
-    .best-tweet-container {
-        background-color: #1a1a1a;
-        padding: 1.5rem;
-        border-left: 4px solid #ff0000;
-        border-radius: 5px;
-        margin: 0.5rem 0;
-    }
-    .best-tweet-container p {
-        font-size: 1.1rem;
-        line-height: 1.6;
-        white-space: pre-wrap;
-        word-wrap: break-word;
-        margin: 0;
-    }
-</style>
-""", unsafe_allow_html=True)
+# Custom CSS
+render_custom_css()
 
-def initialize_session_state():
-    """Initialize session state variables"""
-    # Load saved settings
+def initialize_session_state() -> None:
+    """Initialize session state variables with saved settings."""
+    from utils import load_categories
     settings = load_settings()
     
     if 'categories' not in st.session_state:
@@ -79,13 +60,13 @@ def initialize_session_state():
     if 'scores_history' not in st.session_state:
         st.session_state.scores_history = []
     if 'selected_model' not in st.session_state:
-        st.session_state.selected_model = settings.get("selected_model", "openrouter/anthropic/claude-sonnet-4.5")
+        st.session_state.selected_model = settings.get("selected_model", DEFAULT_MODEL)
     if 'iterations' not in st.session_state:
-        st.session_state.iterations = settings.get("iterations", 10)
+        st.session_state.iterations = settings.get("iterations", DEFAULT_ITERATIONS)
     if 'patience' not in st.session_state:
-        st.session_state.patience = settings.get("patience", 5)
+        st.session_state.patience = settings.get("patience", DEFAULT_PATIENCE)
     if 'use_cache' not in st.session_state:
-        st.session_state.use_cache = settings.get("use_cache", True)
+        st.session_state.use_cache = settings.get("use_cache", DEFAULT_USE_CACHE)
     if 'no_improvement_count' not in st.session_state:
         st.session_state.no_improvement_count = 0
     if 'generator_inputs' not in st.session_state:
@@ -93,38 +74,30 @@ def initialize_session_state():
     if 'evaluator_inputs' not in st.session_state:
         st.session_state.evaluator_inputs = {}
 
-def main():
-    initialize_session_state()
-
-    # Main header
-    st.markdown('<h1 class="main-header">DSPy Tweet Optimizer</h1>', unsafe_allow_html=True)
+def render_sidebar_configuration() -> tuple:
+    """
+    Render sidebar configuration UI.
     
-    # Sidebar configuration
+    Returns:
+        Tuple of (selected_model, iterations, patience)
+    """
     with st.sidebar:
         st.header("Configuration")
         
         # Model selection
         st.subheader("Model Settings")
-        model_options = {
-            "Claude Sonnet 4.5": "openrouter/anthropic/claude-sonnet-4.5",
-            "Opus 4.1": "openrouter/anthropic/claude-opus-4.1",
-            "Gemini 2.5 Flash": "openrouter/google/gemini-2.5-flash",
-            "Gemini 2.5 Flash Lite": "openrouter/google/gemini-2.5-flash-lite",
-            "Gemini 2.5 Pro": "openrouter/google/gemini-2.5-pro",
-            "GPT-5": "openrouter/openai/gpt-5"
-        }
         
         # Find the index of the currently selected model
-        reverse_model_options = {v: k for k, v in model_options.items()}
+        reverse_model_options = {v: k for k, v in AVAILABLE_MODELS.items()}
         current_model_name = reverse_model_options.get(st.session_state.selected_model, "Claude Sonnet 4.5")
-        current_index = list(model_options.keys()).index(current_model_name)
+        current_index = list(AVAILABLE_MODELS.keys()).index(current_model_name)
         
         selected_model_name = st.selectbox(
             "Select Model",
-            options=list(model_options.keys()),
+            options=list(AVAILABLE_MODELS.keys()),
             index=current_index
         )
-        new_model = model_options[selected_model_name]
+        new_model = AVAILABLE_MODELS[selected_model_name]
         
         # Cache control
         use_cache = st.checkbox(
@@ -137,12 +110,12 @@ def main():
         if new_model != st.session_state.selected_model or use_cache != st.session_state.use_cache:
             st.session_state.selected_model = new_model
             st.session_state.use_cache = use_cache
-            save_settings({
-                "selected_model": st.session_state.selected_model,
-                "iterations": st.session_state.iterations,
-                "patience": st.session_state.patience,
-                "use_cache": st.session_state.use_cache
-            })
+            save_settings(build_settings_dict(
+                st.session_state.selected_model,
+                st.session_state.iterations,
+                st.session_state.patience,
+                st.session_state.use_cache
+            ))
         
         st.divider()
         
@@ -167,44 +140,32 @@ def main():
         if iterations != st.session_state.iterations or patience != st.session_state.patience:
             st.session_state.iterations = iterations
             st.session_state.patience = patience
-            save_settings({
-                "selected_model": st.session_state.selected_model,
-                "iterations": iterations,
-                "patience": patience,
-                "use_cache": st.session_state.use_cache
-            })
+            save_settings(build_settings_dict(
+                st.session_state.selected_model,
+                iterations,
+                patience,
+                st.session_state.use_cache
+            ))
         
         st.divider()
         
         # Category management
-        st.subheader("Evaluation Categories")
-        
-        # Add new category
-        with st.expander("Add New Category"):
-            new_category = st.text_area("Category Description", placeholder="e.g., Engagement potential of the tweet")
-            if st.button("Add Category"):
-                if new_category.strip():
-                    st.session_state.categories.append(new_category.strip())
-                    save_categories(st.session_state.categories)
-                    st.success("Category added!")
-                    st.rerun()
-        
-        # Display and manage existing categories
-        if st.session_state.categories:
-            st.write("Current Categories:")
-            for i, category in enumerate(st.session_state.categories):
-                col1, col2 = st.columns([4, 1])
-                with col1:
-                    st.markdown(f'<div class="category-item">{category}</div>', unsafe_allow_html=True)
-                with col2:
-                    if st.button("Delete", key=f"delete_{i}"):
-                        st.session_state.categories.pop(i)
-                        save_categories(st.session_state.categories)
-                        st.rerun()
-        else:
-            st.warning("No categories defined. Add at least one category to start optimization.")
+        render_category_management(st.session_state.categories)
     
-    # Initialize DSPy with selected model and cache settings (after model selector is set)
+    return new_model, iterations, patience
+
+
+def main() -> None:
+    """Main application entry point."""
+    initialize_session_state()
+
+    # Main header
+    render_main_header()
+    
+    # Sidebar configuration
+    selected_model, iterations, patience = render_sidebar_configuration()
+    
+    # Initialize DSPy with selected model and cache settings
     try:
         initialize_dspy(st.session_state.selected_model, st.session_state.use_cache)
     except Exception as e:
@@ -212,14 +173,14 @@ def main():
         return
     
     # Main content area
-    col1, col2 = st.columns([2, 1])
+    col1, col2 = st.columns([MAIN_COL_INPUT, MAIN_COL_STATS])
     
     with col1:
         st.subheader("Tweet Input")
         input_text = st.text_area(
             "Enter your initial tweet concept:",
             placeholder="Enter the text you want to optimize into a tweet...",
-            height=100
+            height=INPUT_HEIGHT
         )
         
         # Optimization controls
@@ -235,86 +196,25 @@ def main():
                 st.rerun()
         
         # Current best tweet display
-        st.subheader("Current Best Tweet")
-        if st.session_state.current_tweet:
-            # Use safe container approach - apply styling to container, display content safely
-            st.markdown('<div class="best-tweet-container">', unsafe_allow_html=True)
-            st.write(st.session_state.current_tweet)
-            st.markdown('</div>', unsafe_allow_html=True)
-        else:
-            st.info("No optimized tweet yet. Start optimization to see results.")
+        render_best_tweet_display(st.session_state.current_tweet)
         
-        # Generator inputs display
-        if st.session_state.generator_inputs:
-            st.subheader("Generator Inputs")
-            with st.expander("View Generator Inputs", expanded=False):
-                st.write("**Input Text:**")
-                st.write(st.session_state.generator_inputs.get("input_text", ""))
-                
-                st.write("**Current Tweet:**")
-                current = st.session_state.generator_inputs.get("current_tweet", "")
-                st.write(current if current else "(empty for first iteration)")
-                
-                st.write("**Previous Evaluation:**")
-                prev_eval = st.session_state.generator_inputs.get("previous_evaluation", "")
-                st.write(prev_eval if prev_eval else "(empty for first iteration)")
-        
-        # Evaluator inputs display
-        if st.session_state.evaluator_inputs:
-            st.subheader("Evaluator Inputs")
-            with st.expander("View Evaluator Inputs", expanded=False):
-                st.write("**Original Text:**")
-                st.write(st.session_state.evaluator_inputs.get("original_text", ""))
-                
-                st.write("**Current Best Tweet:**")
-                current_best = st.session_state.evaluator_inputs.get("current_best_tweet", "")
-                st.write(current_best if current_best else "(empty for first iteration)")
-                
-                st.write("**Tweet Being Evaluated:**")
-                st.write(st.session_state.evaluator_inputs.get("tweet_text", ""))
+        # Generator and evaluator inputs display
+        render_generator_inputs(st.session_state.generator_inputs)
+        render_evaluator_inputs(st.session_state.evaluator_inputs)
     
     with col2:
-        st.subheader("Optimization Stats")
+        # Optimization stats
+        st.session_state.stats_placeholders = render_optimization_stats(
+            st.session_state.iteration_count,
+            st.session_state.best_score,
+            st.session_state.no_improvement_count,
+            st.session_state.patience
+        )
         
-        # Iteration info with live update placeholders
-        st.markdown(f'<div class="iteration-info">', unsafe_allow_html=True)
-        
-        # Create placeholders for live updates
-        if 'stats_placeholders' not in st.session_state:
-            st.session_state.stats_placeholders = {}
-        
-        iteration_placeholder = st.empty()
-        score_placeholder = st.empty()
-        no_improvement_placeholder = st.empty()
-        
-        # Display current values
-        iteration_placeholder.write(f"**Iteration:** {st.session_state.iteration_count}")
-        score_placeholder.write(f"**Best Score:** {st.session_state.best_score:.2f}")
-        no_improvement_placeholder.write(f"**No Improvement:** {st.session_state.no_improvement_count}/{st.session_state.patience}")
-        
-        # Store placeholders in session state for use in optimization loop
-        st.session_state.stats_placeholders = {
-            'iteration': iteration_placeholder,
-            'score': score_placeholder,
-            'no_improvement': no_improvement_placeholder
-        }
-        
-        st.markdown('</div>', unsafe_allow_html=True)
-        
-        # Score breakdown with reasoning
+        # Latest evaluation with reasoning
         if st.session_state.scores_history and len(st.session_state.scores_history) > 0:
             latest_evaluation = st.session_state.scores_history[-1]
-            st.subheader("Latest Evaluation")
-            
-            # Display each category evaluation with reasoning
-            if hasattr(latest_evaluation, 'evaluations') and latest_evaluation.evaluations:
-                for eval in latest_evaluation.evaluations:
-                    with st.expander(f"**{eval.category}: {eval.score}/9**", expanded=False):
-                        st.write(eval.reasoning)
-            else:
-                # Fallback for old format (backwards compatibility)
-                for i, (category, score) in enumerate(zip(st.session_state.categories, latest_evaluation.category_scores)):
-                    st.markdown(f'<div class="score-display">{category[:30]}...: {score}/9</div>', unsafe_allow_html=True)
+            render_latest_evaluation(latest_evaluation, st.session_state.categories)
         
         # Progress visualization
         if len(st.session_state.scores_history) > 0:
@@ -383,7 +283,7 @@ def main():
                         status_text.write(f"Iteration {iteration + 1}/{iterations} - {'Improved!' if is_improvement else 'No improvement'}")
                     
                     # Brief pause to allow UI to update visibly
-                    time.sleep(0.1)
+                    time.sleep(ITERATION_SLEEP_TIME)
                     
                     if not st.session_state.optimization_running:
                         break
@@ -402,61 +302,7 @@ def main():
     
     # Detailed Score History Graph (full width)
     if st.session_state.scores_history and len(st.session_state.scores_history) > 0:
-        st.divider()
-        st.subheader("Detailed Score History")
-        
-        # Create tabs for different views
-        tab1, tab2 = st.tabs(["Average Score", "Category Breakdown"])
-        
-        with tab1:
-            # Average score over iterations
-            avg_scores = [sum(score.category_scores)/len(score.category_scores) for score in st.session_state.scores_history]
-            
-            df_avg = pd.DataFrame({
-                'Iteration': list(range(1, len(avg_scores) + 1)),
-                'Average Score': avg_scores
-            })
-            
-            st.line_chart(df_avg.set_index('Iteration'), use_container_width=True, height=400)
-            
-            # Display statistics
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                st.metric("Starting Score", f"{avg_scores[0]:.2f}")
-            with col2:
-                st.metric("Current Score", f"{avg_scores[-1]:.2f}")
-            with col3:
-                improvement = avg_scores[-1] - avg_scores[0]
-                st.metric("Total Improvement", f"{improvement:.2f}", delta=f"{improvement:.2f}")
-        
-        with tab2:
-            # Individual category scores over iterations
-            if st.session_state.categories:
-                # Build dataframe with all category scores
-                data = {'Iteration': list(range(1, len(st.session_state.scores_history) + 1))}
-                
-                for i, category in enumerate(st.session_state.categories):
-                    category_name = category[:30] + "..." if len(category) > 30 else category
-                    data[category_name] = [score.category_scores[i] for score in st.session_state.scores_history]
-                
-                df_categories = pd.DataFrame(data)
-                st.line_chart(df_categories.set_index('Iteration'), use_container_width=True, height=400)
-                
-                # Show improvement per category
-                st.subheader("Category Improvements")
-                for i, category in enumerate(st.session_state.categories):
-                    initial_score = st.session_state.scores_history[0].category_scores[i]
-                    current_score = st.session_state.scores_history[-1].category_scores[i]
-                    improvement = current_score - initial_score
-                    
-                    st.markdown(
-                        f'<div class="category-item">'
-                        f'<strong>{category[:50]}</strong><br>'
-                        f'Start: {initial_score}/9 → Current: {current_score}/9 '
-                        f'<span style="color: {"#00ff00" if improvement > 0 else "#ff0000" if improvement < 0 else "#ffffff"}">({improvement:+.0f})</span>'
-                        f'</div>',
-                        unsafe_allow_html=True
-                    )
+        render_score_history(st.session_state.scores_history, st.session_state.categories)
 
 if __name__ == "__main__":
     main()
