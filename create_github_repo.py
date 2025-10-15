@@ -7,19 +7,60 @@ import subprocess
 from github import Github, GithubException
 
 def get_github_token():
-    """Get GitHub token from environment or connection."""
-    # Check if PyGithub integration token is available
-    token = os.getenv("GITHUB_TOKEN")
-    if not token:
-        # Try alternative env var names
-        token = os.getenv("GH_TOKEN")
+    """Get GitHub token from Replit connection."""
+    import requests
     
-    if not token:
-        print("Error: GitHub token not found in environment variables")
-        print("Please set GITHUB_TOKEN environment variable")
+    hostname = os.getenv("REPLIT_CONNECTORS_HOSTNAME")
+    
+    # Get authentication token
+    x_replit_token = None
+    if os.getenv("REPL_IDENTITY"):
+        x_replit_token = f"repl {os.getenv('REPL_IDENTITY')}"
+    elif os.getenv("WEB_REPL_RENEWAL"):
+        x_replit_token = f"depl {os.getenv('WEB_REPL_RENEWAL')}"
+    
+    if not x_replit_token or not hostname:
+        print("Error: Replit connection environment not found")
         sys.exit(1)
     
-    return token
+    # Fetch connection settings
+    url = f"https://{hostname}/api/v2/connection?include_secrets=true&connector_names=github"
+    
+    try:
+        response = requests.get(
+            url,
+            headers={
+                'Accept': 'application/json',
+                'X_REPLIT_TOKEN': x_replit_token
+            }
+        )
+        response.raise_for_status()
+        
+        data = response.json()
+        items = data.get('items', [])
+        
+        if not items:
+            print("Error: No GitHub connection found")
+            sys.exit(1)
+        
+        connection = items[0]
+        settings = connection.get('settings', {})
+        
+        # Try different token locations
+        access_token = (
+            settings.get('access_token') or 
+            settings.get('oauth', {}).get('credentials', {}).get('access_token')
+        )
+        
+        if not access_token:
+            print("Error: Access token not found in connection")
+            sys.exit(1)
+        
+        return access_token
+        
+    except Exception as e:
+        print(f"Error fetching GitHub token: {e}")
+        sys.exit(1)
 
 def run_command(cmd, check=True):
     """Run a shell command and return output."""
