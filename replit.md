@@ -4,6 +4,8 @@
 
 This is a tweet optimization application built with Streamlit and DSPy (Declarative Self-improving Language Programs). The system uses a hill-climbing algorithm to iteratively generate and improve tweets based on customizable evaluation categories. It leverages Claude 3.5 Sonnet through OpenRouter to generate tweets and evaluate them across multiple dimensions, automatically refining the output through multiple iterations to maximize overall quality scores.
 
+**Auto-Optimization**: The app automatically optimizes tweets when you enter text - no buttons needed. Simply type your text and tab out to trigger optimization.
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
@@ -68,6 +70,36 @@ st.selectbox(..., on_change=on_history_select)
 ```
 
 **Design Decision**: Callback approach ensures reliable UI updates in Streamlit's reactive model. Session state provides single source of truth for input text value.
+
+#### Automatic Optimization (No Buttons)
+- **Auto-Trigger**: Optimization starts automatically when text is entered
+- **Conditions**: Text must be non-empty, categories configured, not currently running, and different from last optimized
+- **User Flow**: Type text → Tab out → Optimization starts automatically
+- **UI Feedback**: Current Best Tweet displays input text immediately, then updates with optimized versions
+- **Deduplication**: Tracks last optimized input to prevent redundant runs
+
+**Implementation Pattern:**
+```python
+# Auto-trigger check
+should_optimize = (
+    input_text.strip() and 
+    len(st.session_state.categories) > 0 and 
+    not st.session_state.optimization_running and
+    input_text.strip() != st.session_state.last_optimized_input
+)
+
+if should_optimize:
+    st.session_state.optimizing_text = input_text.strip()
+    st.session_state.current_tweet = input_text
+    st.session_state.optimization_running = True
+    st.rerun()  # Update UI immediately
+
+# Run optimization on rerun
+if st.session_state.optimization_running:
+    optimizer.optimize(st.session_state.optimizing_text)
+```
+
+**Design Decision**: Removed manual start/stop buttons for streamlined UX. Text area on_change callback triggers optimization automatically. Immediate rerun ensures UI updates before optimization starts, providing instant feedback.
 
 ### Data Models
 
