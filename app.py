@@ -77,6 +77,8 @@ def initialize_session_state() -> None:
         st.session_state.input_history = load_input_history()
     if 'last_optimized_input' not in st.session_state:
         st.session_state.last_optimized_input = ""
+    if 'latest_tweet' not in st.session_state:
+        st.session_state.latest_tweet = ""
 
 def render_sidebar_configuration() -> tuple:
     """
@@ -223,6 +225,16 @@ def main() -> None:
         # Current best tweet display
         render_best_tweet_display(st.session_state.current_tweet)
         
+        # Latest tweet display (shows the most recent generated tweet even if no improvement)
+        if (st.session_state.latest_tweet and 
+            st.session_state.latest_tweet != st.session_state.current_tweet and
+            st.session_state.scores_history):
+            st.subheader("Latest Generated Tweet")
+            st.markdown('<div class="best-tweet-container" style="background-color: #2a2a2a;">', unsafe_allow_html=True)
+            st.write(st.session_state.latest_tweet)
+            st.markdown('</div>', unsafe_allow_html=True)
+            st.caption("🔄 Most recent attempt - didn't improve the score")
+        
         # Generator and evaluator inputs display
         render_generator_inputs(st.session_state.generator_inputs)
         render_evaluator_inputs(st.session_state.evaluator_inputs)
@@ -266,6 +278,7 @@ def main() -> None:
         st.session_state.optimizing_text = input_text.strip()  # Store text to optimize
         st.session_state.last_optimized_input = input_text.strip()
         st.session_state.current_tweet = input_text  # Set initial tweet
+        st.session_state.latest_tweet = ""  # Reset latest tweet
         st.session_state.optimization_running = True
         st.session_state.iteration_count = 0
         st.session_state.scores_history = []
@@ -306,6 +319,9 @@ def main() -> None:
                     st.session_state.no_improvement_count = patience_counter
                     st.session_state.generator_inputs = generator_inputs
                     st.session_state.evaluator_inputs = evaluator_inputs
+                    
+                    # Always track the latest generated tweet
+                    st.session_state.latest_tweet = current_tweet
                     
                     if is_improvement:
                         st.session_state.current_tweet = current_tweet
