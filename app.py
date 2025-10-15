@@ -180,27 +180,36 @@ def main() -> None:
     with col1:
         st.subheader("Tweet Input")
         
+        # Initialize input text in session state if not exists
+        if 'input_text_value' not in st.session_state:
+            st.session_state.input_text_value = ""
+        
+        # Callback function for history selection
+        def on_history_select():
+            if st.session_state.history_selector:
+                st.session_state.input_text_value = st.session_state.history_selector
+        
         # Input history dropdown
         if st.session_state.input_history:
-            selected_history = st.selectbox(
+            st.selectbox(
                 "Load from history:",
                 options=[""] + st.session_state.input_history,
                 format_func=lambda x: "Select from history..." if x == "" else (x[:80] + "..." if len(x) > 80 else x),
-                key="history_selector"
+                key="history_selector",
+                on_change=on_history_select
             )
-            
-            # If a history item is selected, use it as default value
-            default_value = selected_history if selected_history else ""
-        else:
-            default_value = ""
         
+        # Text area with value from session state
         input_text = st.text_area(
             "Enter your initial tweet concept:",
-            value=default_value,
+            value=st.session_state.input_text_value,
             placeholder="Enter the text you want to optimize into a tweet...",
-            height=INPUT_HEIGHT,
-            key="input_text_area"
+            height=INPUT_HEIGHT
         )
+        
+        # Update session state when user types
+        if input_text != st.session_state.input_text_value:
+            st.session_state.input_text_value = input_text
         
         # Optimization controls
         col1_1, col1_2 = st.columns(2)

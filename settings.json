@@ -1,6 +1,6 @@
 {
   "selected_model": "openrouter/anthropic/claude-sonnet-4.5",
-  "iterations": 2,
+  "iterations": 1,
   "patience": 1,
   "use_cache": false
 }
