@@ -6,6 +6,7 @@ from models import EvaluationResult
 from hill_climbing import HillClimbingOptimizer
 from utils import initialize_dspy, get_dspy_lm, save_settings, load_settings, load_categories, load_input_history
 from session_state_manager import SessionStateManager
+from optimization_manager import OptimizationManager
 from ui_components import (
     render_custom_css,
     render_main_header,
@@ -290,76 +291,25 @@ def main() -> None:
             patience=patience
         )
         
-        # Use the progress placeholders created in col1 (above best tweet)
-        # Progress bar and status are now shown above the best tweet display
+        # Create optimization manager
+        optimization_manager = OptimizationManager(optimizer)
         
-        early_stop = False
         try:
             # Run optimization with selected model using dspy.context
             with dspy.context(lm=selected_lm):
-                for iteration, (current_tweet, scores, is_improvement, patience_counter, generator_inputs, evaluator_inputs) in enumerate(
-                    optimizer.optimize(st.session_state.optimizing_text)
-                ):
-                    st.session_state.iteration_count = iteration + 1
-                    st.session_state.scores_history.append(scores)
-                    st.session_state.no_improvement_count = patience_counter
-                    st.session_state.generator_inputs = generator_inputs
-                    st.session_state.evaluator_inputs = evaluator_inputs
-                    
-                    # Always track the latest generated tweet
-                    st.session_state.latest_tweet = current_tweet
-                    
-                    if is_improvement:
-                        st.session_state.current_tweet = current_tweet
-                        st.session_state.best_score = sum(scores.category_scores) / len(scores.category_scores)
-                    
-                    # Update live stats if placeholders exist
-                    if 'stats_placeholders' in st.session_state:
-                        st.session_state.stats_placeholders['iteration'].write(f"**Iteration:** {st.session_state.iteration_count}")
-                        st.session_state.stats_placeholders['score'].write(f"**Best Score:** {st.session_state.best_score:.2f}")
-                        st.session_state.stats_placeholders['no_improvement'].write(f"**No Improvement:** {st.session_state.no_improvement_count}/{patience}")
-                    
-                    # Check if we'll stop due to patience on next iteration
-                    if patience_counter >= patience:
-                        early_stop = True
-                    
-                    # Update progress bar and status (above best tweet)
-                    progress_placeholder.progress((iteration + 1) / iterations)
-                    
-                    # Get current score for this iteration
-                    current_score = sum(scores.category_scores) / len(scores.category_scores)
-                    
-                    # Format status with iteration, scores, and no improvement count
-                    status_msg = f"**Iteration {iteration + 1}/{iterations}** | Current: {current_score:.2f} | Best: {st.session_state.best_score:.2f} | No Improvement: {patience_counter}/{patience}"
-                    
-                    if early_stop:
-                        status_msg += f" | ⚠️ Stopping early"
-                    elif is_improvement:
-                        status_msg += " | ✓ Improved!"
-                    
-                    status_placeholder.markdown(status_msg)
-                    
-                    # Brief pause to allow UI to update visibly
-                    time.sleep(ITERATION_SLEEP_TIME)
-                    
-                    if not st.session_state.optimization_running:
-                        break
-                
+                optimization_manager.run_optimization(
+                    input_text=st.session_state.optimizing_text,
+                    iterations=iterations,
+                    patience=patience,
+                    progress_placeholder=progress_placeholder,
+                    status_placeholder=status_placeholder
+                )
         except Exception as e:
             st.error(f"Optimization failed: {str(e)}")
         finally:
             st.session_state.optimization_running = False
-            # Complete the progress bar
             progress_placeholder.progress(1.0)
-            
-            # Show completion message with all stats
-            if early_stop:
-                final_msg = f"✓ **Optimization Complete** | {st.session_state.iteration_count} iterations | Best Score: {st.session_state.best_score:.2f} | Stopped early (no improvement)"
-            else:
-                final_msg = f"✓ **Optimization Complete** | {st.session_state.iteration_count} iterations | Best Score: {st.session_state.best_score:.2f}"
-            
-            status_placeholder.markdown(final_msg)
-            # Rerun once at the end to show final results
+            optimization_manager.display_completion_message(status_placeholder)
             st.rerun()
     
     # Detailed Score History Graph (full width)
