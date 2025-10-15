@@ -6,11 +6,13 @@ from typing import List, Dict, Any
 from constants import (
     CATEGORIES_FILE,
     SETTINGS_FILE,
+    HISTORY_FILE,
     DEFAULT_CATEGORIES,
     DEFAULT_MODEL,
     DEFAULT_ITERATIONS,
     DEFAULT_PATIENCE,
     DEFAULT_USE_CACHE,
+    MAX_HISTORY_ITEMS,
     OPENROUTER_API_BASE,
     OPENROUTER_MAX_TOKENS,
     OPENROUTER_TEMPERATURE,
@@ -19,6 +21,8 @@ from constants import (
     ERROR_LOAD_CATEGORIES,
     ERROR_SAVE_SETTINGS,
     ERROR_LOAD_SETTINGS,
+    ERROR_SAVE_HISTORY,
+    ERROR_LOAD_HISTORY,
     ERROR_DSPy_INIT,
     TWEET_MAX_LENGTH
 )
@@ -133,3 +137,55 @@ def get_default_settings() -> Dict[str, Any]:
         "patience": DEFAULT_PATIENCE,
         "use_cache": DEFAULT_USE_CACHE
     }
+
+def save_input_history(history: List[str]) -> None:
+    """Save input history to JSON file."""
+    try:
+        with open(HISTORY_FILE, 'w') as f:
+            json.dump(history, f, indent=2)
+    except Exception as e:
+        st.error(f"{ERROR_SAVE_HISTORY}: {str(e)}")
+
+def load_input_history() -> List[str]:
+    """Load input history from JSON file."""
+    try:
+        if os.path.exists(HISTORY_FILE):
+            with open(HISTORY_FILE, 'r') as f:
+                history = json.load(f)
+                return history if isinstance(history, list) else []
+        else:
+            return []
+    except Exception as e:
+        st.error(f"{ERROR_LOAD_HISTORY}: {str(e)}")
+        return []
+
+def add_to_input_history(history: List[str], new_input: str) -> List[str]:
+    """
+    Add a new input to history, maintaining max size and avoiding duplicates.
+    
+    Args:
+        history: Current history list
+        new_input: New input text to add
+        
+    Returns:
+        Updated history list with new input at the beginning
+    """
+    # Strip whitespace from input
+    new_input = new_input.strip()
+    
+    # Don't add empty strings
+    if not new_input:
+        return history
+    
+    # Remove duplicate if it exists
+    if new_input in history:
+        history.remove(new_input)
+    
+    # Add to beginning of list
+    updated_history = [new_input] + history
+    
+    # Trim to max size
+    if len(updated_history) > MAX_HISTORY_ITEMS:
+        updated_history = updated_history[:MAX_HISTORY_ITEMS]
+    
+    return updated_history
