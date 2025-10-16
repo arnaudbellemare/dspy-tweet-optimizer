@@ -171,20 +171,37 @@ def render_enhanced_tweet_input():
             if input_text.strip():
                 # Trigger web search analysis
                 st.session_state.web_context = "Searching for relevant context..."
+                st.session_state.selected_strategy = "web_enhanced"
+                # Clear last optimized to trigger new optimization
+                st.session_state.last_optimized_input = ""
+                st.success("🔍 Web search analysis triggered!")
                 st.rerun()
+            else:
+                st.warning("Please enter some text first!")
     
     with col2:
         if st.button("🧠 Smart Optimization", use_container_width=True):
             if input_text.strip():
                 # Use enhanced optimization
                 st.session_state.selected_strategy = "web_enhanced"
+                # Clear last optimized to trigger new optimization
+                st.session_state.last_optimized_input = ""
+                st.success("🧠 Smart optimization triggered!")
                 st.rerun()
+            else:
+                st.warning("Please enter some text first!")
     
     # Rerun button
     if input_text.strip() and len(st.session_state.categories) > 0 and not st.session_state.optimization_running:
         if st.button("🔄 Rerun Optimization", use_container_width=True):
+            # Clear last optimized to trigger new optimization
             st.session_state.last_optimized_input = ""
+            st.success("🔄 Optimization rerun triggered!")
             st.rerun()
+    elif input_text.strip() and len(st.session_state.categories) == 0:
+        st.info("⚠️ Please add at least one evaluation category in the sidebar to enable optimization.")
+    elif input_text.strip() and st.session_state.optimization_running:
+        st.info("⏳ Optimization is already running...")
     
     return input_text
 
