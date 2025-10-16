@@ -26,7 +26,8 @@ from constants import (
     ERROR_SAVE_HISTORY,
     ERROR_LOAD_HISTORY,
     ERROR_DSPy_INIT,
-    TWEET_MAX_LENGTH
+    TWEET_MAX_LENGTH,
+    AVAILABLE_MODELS
 )
 
 def save_categories(categories: List[str]) -> None:
@@ -65,8 +66,6 @@ def is_ollama_available() -> bool:
 
 def get_available_models() -> Dict[str, str]:
     """Get available models, filtering out local-only models if Ollama is not available."""
-    from constants import AVAILABLE_MODELS
-    
     if is_ollama_available():
         return AVAILABLE_MODELS
     else:
