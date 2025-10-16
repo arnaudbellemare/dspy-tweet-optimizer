@@ -34,7 +34,8 @@ AVAILABLE_MODELS: Dict[str, str] = {
     "Gemini 2.5 Flash": "openrouter/google/gemini-2.5-flash",
     "Gemini 2.5 Flash Lite": "openrouter/google/gemini-2.5-flash-lite",
     "Gemini 2.5 Pro": "openrouter/google/gemini-2.5-pro",
-    "GPT-5": "openrouter/openai/gpt-5"
+    "GPT-5": "openrouter/openai/gpt-5",
+    "Gemma 3 4B (Local)": "ollama/gemma3:4b"
 }
 
 # API Configuration

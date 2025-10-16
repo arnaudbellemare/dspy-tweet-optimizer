@@ -53,18 +53,32 @@ def load_categories() -> List[str]:
 def get_dspy_lm(model_name: str):
     """Get a DSPy LM instance for the specified model (cached per model)."""
     try:
-        openrouter_key = os.getenv("OPENROUTER_API_KEY")
-        if not openrouter_key:
-            raise ValueError(ERROR_NO_API_KEY)
-        
-        lm = dspy.LM(
-            model=model_name,
-            api_key=openrouter_key,
-            api_base=OPENROUTER_API_BASE,
-            max_tokens=OPENROUTER_MAX_TOKENS,
-            temperature=OPENROUTER_TEMPERATURE
-        )
-        return lm
+        # Check if it's an Ollama model
+        if model_name.startswith("ollama/"):
+            # Extract the actual model name (remove "ollama/" prefix)
+            actual_model = model_name.replace("ollama/", "")
+            
+            lm = dspy.LM(
+                model=actual_model,
+                api_base="http://localhost:11434",
+                max_tokens=4096,
+                temperature=0.7
+            )
+            return lm
+        else:
+            # Handle OpenRouter models
+            openrouter_key = os.getenv("OPENROUTER_API_KEY")
+            if not openrouter_key:
+                raise ValueError(ERROR_NO_API_KEY)
+            
+            lm = dspy.LM(
+                model=model_name,
+                api_key=openrouter_key,
+                api_base=OPENROUTER_API_BASE,
+                max_tokens=OPENROUTER_MAX_TOKENS,
+                temperature=OPENROUTER_TEMPERATURE
+            )
+            return lm
     except Exception as e:
         raise Exception(f"Failed to create LM: {str(e)}")
 
