@@ -2,6 +2,8 @@ import json
 import os
 import streamlit as st
 import dspy
+import subprocess
+import socket
 from typing import List, Dict, Any
 from constants import (
     CATEGORIES_FILE,
@@ -48,6 +50,28 @@ def load_categories() -> List[str]:
     except Exception as e:
         st.error(f"{ERROR_LOAD_CATEGORIES}: {str(e)}")
         return []
+
+def is_ollama_available() -> bool:
+    """Check if Ollama is running and accessible."""
+    try:
+        # Try to connect to Ollama's default port
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(2)
+        result = sock.connect_ex(('localhost', 11434))
+        sock.close()
+        return result == 0
+    except:
+        return False
+
+def get_available_models() -> Dict[str, str]:
+    """Get available models, filtering out local-only models if Ollama is not available."""
+    from constants import AVAILABLE_MODELS
+    
+    if is_ollama_available():
+        return AVAILABLE_MODELS
+    else:
+        # Filter out Ollama models if Ollama is not available
+        return {k: v for k, v in AVAILABLE_MODELS.items() if not v.startswith("ollama/")}
 
 @st.cache_resource
 def get_dspy_lm(model_name: str):

@@ -12,7 +12,7 @@ import dspy
 from dspy_modules import TweetGeneratorModule, TweetEvaluatorModule
 from models import EvaluationResult
 from hill_climbing import HillClimbingOptimizer
-from utils import initialize_dspy, get_dspy_lm, save_settings, load_settings, load_categories, load_input_history
+from utils import initialize_dspy, get_dspy_lm, save_settings, load_settings, load_categories, load_input_history, get_available_models
 from session_state_manager import SessionStateManager
 from optimization_manager import OptimizationManager
 from ui_components import (
@@ -77,17 +77,26 @@ def render_sidebar_configuration() -> tuple:
         # Model selection
         st.subheader("Model Settings")
         
+        # Get available models (filtered based on Ollama availability)
+        available_models = get_available_models()
+        
         # Find the index of the currently selected model
-        reverse_model_options = {v: k for k, v in AVAILABLE_MODELS.items()}
+        reverse_model_options = {v: k for k, v in available_models.items()}
         current_model_name = reverse_model_options.get(st.session_state.selected_model, "Claude Sonnet 4.5")
-        current_index = list(AVAILABLE_MODELS.keys()).index(current_model_name)
+        
+        # Handle case where current model is not available (e.g., Ollama model when Ollama is not running)
+        if current_model_name not in available_models:
+            current_model_name = "Claude Sonnet 4.5"
+            st.session_state.selected_model = available_models[current_model_name]
+        
+        current_index = list(available_models.keys()).index(current_model_name)
         
         selected_model_name = st.selectbox(
             "Select Model",
-            options=list(AVAILABLE_MODELS.keys()),
+            options=list(available_models.keys()),
             index=current_index
         )
-        new_model = AVAILABLE_MODELS[selected_model_name]
+        new_model = available_models[selected_model_name]
         
         # Cache control
         use_cache = st.checkbox(
