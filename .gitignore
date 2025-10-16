@@ -30,6 +30,22 @@ ENV/
 env.bak/
 venv.bak/
 
+# pytest
+.pytest_cache/
+.coverage
+htmlcov/
+*.cover
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
 # IDE
 .vscode/
 .idea/
@@ -45,9 +61,6 @@ venv.bak/
 .Trashes
 ehthumbs.db
 Thumbs.db
-
-# Streamlit
-.streamlit/secrets.toml
 
 # Logs
 *.log
@@ -79,12 +92,6 @@ node_modules/
 # Yarn Integrity file
 .yarn-integrity
 
-# dotenv environment variables file
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
 # Temporary files
 *.tmp
 *.temp
@@ -94,3 +101,11 @@ node_modules/
 *.pem
 secrets.json
 config.json
+
+# Replit
+.replit
+replit.nix
+.config/
+.cache/
+.upm/
+.pythonlibs/
