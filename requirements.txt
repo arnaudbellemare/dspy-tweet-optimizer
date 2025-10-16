@@ -1,0 +1,19 @@
+# Core dependencies for Enhanced DSPy Tweet Optimizer
+streamlit>=1.50.0
+dspy>=3.0.3
+dspy-ai>=3.0.3
+pydantic>=2.12.2
+requests>=2.32.5
+
+# Optional dependencies for enhanced features
+openai>=2.3.0
+pandas>=2.3.3
+
+# Testing dependencies (optional)
+pytest>=8.4.2
+pytest-mock>=3.15.1
+
+# Note: The following are optional and depend on your setup:
+# - Ollama: Install separately for local LLM support
+# - Perplexity API: Requires API key for web search features
+# - OpenRouter API: Requires API key for cloud model access

@@ -1,0 +1,20 @@
+[global]
+# Streamlit configuration for Enhanced DSPy Tweet Optimizer
+
+[server]
+# Server configuration
+headless = true
+port = 8501
+enableCORS = false
+enableXsrfProtection = false
+
+[browser]
+# Browser configuration
+gatherUsageStats = false
+
+[theme]
+# Theme configuration
+primaryColor = "#ff0000"
+backgroundColor = "#1a1a1a"
+secondaryBackgroundColor = "#2a2a2a"
+textColor = "#ffffff"
