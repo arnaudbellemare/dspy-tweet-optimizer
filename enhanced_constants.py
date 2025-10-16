@@ -13,9 +13,9 @@ from constants import *
 
 # Advanced LLM Provider Configuration
 ADVANCED_MODELS: Dict[str, Dict[str, str]] = {
-    "Ollama Gemma 2 4B": {
+    "Ollama Gemma 3 4B": {
         "provider": "ollama",
-        "model": "gemma2:4b",
+        "model": "gemma3:4b",
         "capabilities": ["text_generation", "local_processing", "fast_inference"]
     },
     "Ollama Code Llama": {
@@ -98,7 +98,7 @@ WEB_SEARCH_CONFIG = {
 AX_LLM_CONFIG = {
     "performance_tracking": True,
     "auto_routing": True,
-    "fallback_provider": "ollama_gemma2_4b",
+    "fallback_provider": "ollama_gemma3_4b",
     "max_retries": 3,
     "timeout": 30
 }

@@ -238,7 +238,7 @@ class HybridOptimizationModule:
     
     def __init__(self):
         self.optimization_strategies = {
-            "local_fast": "ollama_gemma2_4b",
+            "local_fast": "ollama_gemma3_4b",
             "web_enhanced": "perplexity_sonar",
             "balanced": None  # Use hybrid routing
         }

@@ -399,7 +399,7 @@ def setup_advanced_llm_system():
     # Add Ollama provider if available
     ollama_config = LLMConfig(
         provider=LLMProvider.OLLAMA,
-        model_name="gemma2:4b",  # Default model - Gemma 3:4b
+        model_name="gemma3:4b",  # Default model - Gemma 3:4b
         base_url="http://localhost:11434"
     )
     
@@ -407,7 +407,7 @@ def setup_advanced_llm_system():
         ollama_provider = OllamaProvider(ollama_config)
         if ollama_provider.is_available():
             advanced_llm_manager.add_provider(
-                "ollama_gemma2_4b",
+                "ollama_gemma3_4b",
                 ollama_provider,
                 capabilities=["text_generation", "local_processing"]
             )

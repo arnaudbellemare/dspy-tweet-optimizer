@@ -1,6 +1,6 @@
-# 🚀 Quick Setup Guide - Perplexity + Local Gemma 2 4B
+# 🚀 Quick Setup Guide - Perplexity + Local Gemma 3 4B
 
-This guide will help you set up the Enhanced DSPy Tweet Optimizer with your Perplexity API key and local Gemma 2 4B model.
+This guide will help you set up the Enhanced DSPy Tweet Optimizer with your Perplexity API key and local Gemma 3 4B model.
 
 ## 🔑 **Step 1: Add Your Perplexity API Key**
 
@@ -16,7 +16,7 @@ This guide will help you set up the Enhanced DSPy Tweet Optimizer with your Perp
 export PERPLEXITY_API_KEY='pplx-your-api-key-here'
 ```
 
-## 🤖 **Step 2: Set Up Local Gemma 2 4B**
+## 🤖 **Step 2: Set Up Local Gemma 3 4B**
 
 ### **Install Ollama (if not already installed):**
 ```bash
@@ -34,16 +34,16 @@ curl -fsSL https://ollama.ai/install.sh | sh
 ollama serve
 ```
 
-### **Install Gemma 2 4B Model:**
+### **Install Gemma 3 4B Model:**
 ```bash
-ollama pull gemma2:4b
+ollama pull gemma3:4b
 ```
 
 ### **Verify Installation:**
 ```bash
 ollama list
 ```
-You should see `gemma2:4b` in the list.
+You should see `gemma3:4b` in the list.
 
 ## 🎯 **Step 3: Test Your Setup**
 
@@ -74,7 +74,7 @@ streamlit run enhanced_app.py
 ## 🎛️ **Available Features with Your Setup:**
 
 ### **Local Fast Strategy:**
-- ✅ **Uses Gemma 2 4B** for fast, private processing
+- ✅ **Uses Gemma 3 4B** for fast, private processing
 - ✅ **No internet required** for basic optimization
 - ✅ **Free to use** (no API costs)
 
@@ -84,14 +84,14 @@ streamlit run enhanced_app.py
 - 🚀 **Enhanced context** from web sources
 
 ### **Hybrid Balanced Strategy:**
-- 🎯 **Automatic selection** between Gemma 2 4B and Perplexity
+- 🎯 **Automatic selection** between Gemma 3 4B and Perplexity
 - 🎯 **Best of both worlds** - local speed + web intelligence
 - 🎯 **Smart routing** based on task requirements
 
 ## 🔧 **Configuration Details:**
 
 ### **Your Local Model:**
-- **Model**: `gemma2:4b` (Gemma 2 4B)
+- **Model**: `gemma3:4b` (Gemma 3 4B)
 - **Provider**: Ollama
 - **Capabilities**: Text generation, local processing, fast inference
 - **Base URL**: `http://localhost:11434`
@@ -133,8 +133,8 @@ ollama serve
 
 ### **Model Issues:**
 ```bash
-# Reinstall Gemma 2 4B if needed
-ollama pull gemma2:4b
+# Reinstall Gemma 3 4B if needed
+ollama pull gemma3:4b
 
 # Check available models
 ollama list
@@ -142,7 +142,7 @@ ollama list
 
 ## 📊 **Performance Expectations:**
 
-### **Local Gemma 2 4B:**
+### **Local Gemma 3 4B:**
 - ⚡ **Fast inference** (2-5 seconds per generation)
 - 🔒 **Private processing** (no data leaves your machine)
 - 💰 **Free to use** (no API costs)
@@ -167,7 +167,7 @@ After setup, you should see:
 ## 🎉 **You're All Set!**
 
 Your Enhanced DSPy Tweet Optimizer is now configured with:
-- 🤖 **Local Gemma 2 4B** for fast, private processing
+- 🤖 **Local Gemma 3 4B** for fast, private processing
 - 🌐 **Perplexity API** for web search and current trends
 - 🎯 **Hybrid optimization** for the best of both worlds
 

@@ -53,7 +53,7 @@ PERPLEXITY_API_KEY = "pplx-your-api-key-here"
 
 ### **Optimization Strategies:**
 - 🚀 **Web Enhanced Strategy**: Uses Perplexity for real-time context
-- 🚀 **Hybrid Balanced Strategy**: Combines local Gemma 2 4B + Perplexity
+- 🚀 **Hybrid Balanced Strategy**: Combines local Gemma 3 4B + Perplexity
 - 🚀 **Smart Routing**: Automatically selects best provider
 
 ## 🔍 **How to Get Your Perplexity API Key**
@@ -109,7 +109,7 @@ Once your API key is set, you'll see:
 - 🟢 **Perplexity Sonar**: Available for web search
 
 ### **Available Strategies:**
-- **Local Fast**: Uses Gemma 2 4B only
+- **Local Fast**: Uses Gemma 3 4B only
 - **Web Enhanced**: Uses Perplexity for web search
 - **Hybrid Balanced**: Automatically selects best provider
 
@@ -128,7 +128,7 @@ Once your API key is set, you'll see:
 
 ### **Cost Management:**
 - **Perplexity API** charges per request
-- **Local Gemma 2 4B** is free to use
+- **Local Gemma 3 4B** is free to use
 - **Hybrid mode** balances cost and quality
 
 ## 🐛 **Troubleshooting**
@@ -153,7 +153,7 @@ Once your API key is set, you'll see:
 ## 🎉 **You're Ready!**
 
 With your Perplexity API key configured, you now have:
-- 🤖 **Local Gemma 2 4B** for fast, private processing
+- 🤖 **Local Gemma 3 4B** for fast, private processing
 - 🌐 **Perplexity Web Search** for real-time information
 - 🎯 **Hybrid Intelligence** for optimal results
 
