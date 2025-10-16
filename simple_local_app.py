@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Local-Only DSPy Tweet Optimizer
+Simple Local DSPy Tweet Optimizer
 
-This version only uses local Ollama models and doesn't require any API keys.
-Perfect for local development or when you don't want to use cloud APIs.
+This version skips the Ollama check and tries to use it directly.
+Perfect for when you know Ollama is running but the check is being finicky.
 """
 
 import streamlit as st
@@ -46,7 +46,7 @@ from constants import (
 
 # Page configuration
 st.set_page_config(
-    page_title=f"{PAGE_TITLE} - Local Only",
+    page_title=f"{PAGE_TITLE} - Simple Local",
     layout=PAGE_LAYOUT
 )
 
@@ -184,51 +184,15 @@ def main() -> None:
     # Enhanced header
     st.markdown("""
     <div style="background-color: #2a2a2a; padding: 1rem; border-radius: 0.5rem; margin: 1rem 0;">
-        <h1 style="color: #00ff00; margin: 0;">🏠 Local DSPy Tweet Optimizer</h1>
+        <h1 style="color: #00ff00; margin: 0;">🏠 Simple Local DSPy Tweet Optimizer</h1>
         <p style="margin: 0.5rem 0 0 0; color: #cccccc;">
             AI-powered tweet optimization using local models only (no API keys required)
         </p>
     </div>
     """, unsafe_allow_html=True)
     
-    # Check if Ollama is available
-    try:
-        import socket
-        import requests
-        
-        # Try multiple ways to check Ollama
-        ollama_available = False
-        
-        # Method 1: Socket connection
-        try:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.settimeout(2)
-            result = sock.connect_ex(('localhost', 11434))
-            sock.close()
-            if result == 0:
-                ollama_available = True
-        except:
-            pass
-        
-        # Method 2: HTTP request
-        if not ollama_available:
-            try:
-                response = requests.get("http://localhost:11434/api/tags", timeout=2)
-                if response.status_code == 200:
-                    ollama_available = True
-            except:
-                pass
-        
-        if not ollama_available:
-            st.error("❌ Ollama is not running! Please start Ollama first:")
-            st.code("ollama serve")
-            st.info("💡 If Ollama is running, try refreshing the page or check if it's on a different port.")
-            st.stop()
-        else:
-            st.success("✅ Ollama is running and ready!")
-    except Exception as e:
-        st.warning(f"⚠️ Could not verify Ollama status: {str(e)}")
-        st.info("💡 If you're sure Ollama is running, you can continue anyway.")
+    # Simple Ollama status check
+    st.info("💡 Make sure Ollama is running: `ollama serve`")
     
     # Sidebar configuration
     selected_model, iterations, patience = render_sidebar_configuration()
@@ -244,7 +208,9 @@ def main() -> None:
         
         st.success(f"✅ DSPy initialized with {selected_model}")
     except Exception as e:
-        st.error(f"Failed to initialize DSPy: {str(e)}")
+        st.error(f"❌ Failed to initialize DSPy: {str(e)}")
+        st.info("💡 Make sure Ollama is running and the model is installed:")
+        st.code(f"ollama serve\nollama pull {selected_model.replace('ollama/', '')}")
         return
     
     # Main content area
