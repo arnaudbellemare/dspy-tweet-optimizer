@@ -359,11 +359,45 @@ def main() -> None:
                 patience=st.session_state.patience
             )
         else:
-            # Fallback to original optimization
-            st.warning("Using fallback optimization mode")
-            from app import main as original_main
-            # This would require refactoring the original app.py to be importable
-            st.error("Enhanced features unavailable. Please check your configuration.")
+            # Fallback to original optimization using original modules
+            st.warning("Using fallback optimization mode - enhanced features unavailable")
+            
+            # Use original DSPy modules as fallback
+            from dspy_modules import TweetGeneratorModule, TweetEvaluatorModule
+            from hill_climbing import HillClimbingOptimizer
+            from optimization_manager import OptimizationManager
+            
+            # Create fallback optimizer
+            optimizer = HillClimbingOptimizer(
+                generator=TweetGeneratorModule(),
+                evaluator=TweetEvaluatorModule(),
+                categories=st.session_state.categories,
+                max_iterations=st.session_state.iterations,
+                patience=st.session_state.patience
+            )
+            
+            # Create optimization manager
+            optimization_manager = OptimizationManager(optimizer)
+            
+            # Set up progress tracking
+            progress_placeholder = st.empty()
+            status_placeholder = st.empty()
+            
+            try:
+                # Run optimization with fallback modules
+                optimization_manager.run_optimization(
+                    input_text=st.session_state.optimizing_text,
+                    iterations=st.session_state.iterations,
+                    patience=st.session_state.patience,
+                    progress_placeholder=progress_placeholder,
+                    status_placeholder=status_placeholder
+                )
+            except Exception as e:
+                st.error(f"Optimization failed: {str(e)}")
+            finally:
+                st.session_state.optimization_running = False
+                progress_placeholder.progress(1.0)
+                optimization_manager.display_completion_message(status_placeholder)
         
         st.rerun()
     
